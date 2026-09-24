@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#EDEFEC; --panel:#FFFFFF; --ink:#1B211F; --muted:#5C6662; --line:#D4D9D6;
@@ -157,6 +158,18 @@ textarea{font-family:var(--mono); font-size:11px; height:90px; resize:vertical}
 .about h3{margin:0 0 6px; font-size:12px; letter-spacing:.1em; color:var(--muted)}
 .about ul{font-size:12.5px; color:var(--muted); gap:4px}
 @media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+
+/* ---------- Googleログイン ---------- */
+.acct{display:inline-flex; align-items:center}
+.acctBtn{display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 4px; max-width:170px}
+.acctBtn img{width:24px; height:24px; border-radius:50%; display:block; flex:none}
+.acctBtn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px}
+.gate{position:fixed; inset:0; z-index:1000; background:var(--bg); display:grid; place-items:center; padding:24px; box-sizing:border-box}
+.gateCard{width:100%; max-width:400px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:28px 24px; box-sizing:border-box; display:flex; flex-direction:column; gap:14px}
+.gateCard h2{margin:0; font-size:17px; line-height:1.5}
+.gateCard .hint{font-size:12.5px}
+#gateBtn{min-height:44px}
+.gateMsg{margin:0; font-size:12.5px; color:var(--danger); min-height:1em}
 </style>
 <style>
 :root{color-scheme:light; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -172,6 +185,7 @@ img{max-width:100%}
     <div class="brand"><span class="tape" aria-hidden="true"></span><b>バミリ</b><small>舞台配置図</small></div>
     <input id="title" class="titleIn" aria-label="公演名・タイトル" placeholder="公演名（画像の上に入ります）">
     <div class="hbtns">
+      <div class="acct" id="acct"></div>
       <button id="helpBtn">使い方</button>
       <a id="fbBtn" class="btnLink" href="https://forms.gle/HpXuHj7YCkBAsbGt9" target="_blank" rel="noopener">ご意見</a>
       <button id="undo" title="元に戻す (Ctrl+Z)">↶ 戻す</button>
@@ -219,6 +233,15 @@ img{max-width:100%}
       <div class="pane" id="pane-stage" hidden></div>
       <div class="pane" id="pane-save" hidden></div>
     </aside>
+  </div>
+</div>
+<div class="gate" id="gate">
+  <div class="gateCard" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div class="brand"><span class="tape" aria-hidden="true"></span><b>バミリ</b><small>舞台配置図</small></div>
+    <h2 id="gateTitle">Googleアカウントでログインして使います</h2>
+    <p class="hint">ログインすると、名前・メールアドレス・利用日時が作成者に記録されます。配置や奏者名は送られず、これまでどおりこの端末の中だけに保存されます。<a class="fbLink" href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
+    <div id="gateBtn"></div>
+    <p class="gateMsg" id="gateMsg" role="status"></p>
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -1110,6 +1133,7 @@ const FEEDBACK_URL='https://forms.gle/HpXuHj7YCkBAsbGt9';
 const ABOUT=`<div class="about"><h3>このツールについて</h3><ul>
   <li>個人が作成し、無料で公開しているツールです。</li>
   <li>入力した配置や奏者名は、この端末のブラウザの中だけに保存されます。作成者やほかの人に送られることはありません。</li>
+  <li>利用にはGoogleアカウントでのログインが必要です。ログインすると、名前・メールアドレス・利用日時が作成者に記録されます。配置や奏者名は送られません。詳しくは <a class="fbLink" href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a> をご覧ください。</li>
   <li>利用状況を知るため、任意の <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">利用者アンケート</a> をお願いすることがあります。答えるかどうかは自由です。</li>
   <li>動作や表示の正確さは保証できません。本番の配置は、会場や関係者と必ず確認してください。</li>
   <li>不具合や「こうしてほしい」は <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">ご意見フォーム</a> からどうぞ。</li></ul></div>`;
@@ -1161,5 +1185,84 @@ setZoom(matchMedia('(max-width:820px)').matches?1.8:1);
 })();
 </script>
 
+
+<script>
+/* ---------- Googleログインと利用記録 ---------- */
+(()=>{
+const AUTH={
+  MODE:'required', // 'required'＝ログイン必須 / 'optional'＝ログイン任意
+  CLIENT_ID:'687175214685-2vl84sqh4qdcpfrqv17ra7fvodqrlqd8.apps.googleusercontent.com',
+  LOG_ENDPOINT:'https://script.google.com/macros/s/AKfycbzkFUrhdCvg2Oo59ALTDFzJHowvhVDoVPFr1i52vIU7TV5UqXxFsCDhuxi8u7Kz8vYeWA/exec',
+};
+const REQ=AUTH.MODE==='required', KEY='bamiri.auth';
+const $=q=>document.querySelector(q);
+let user=null;
+
+function remember(on){try{on?localStorage.setItem(KEY,'1'):localStorage.removeItem(KEY)}catch(e){}}
+function remembered(){try{return localStorage.getItem(KEY)==='1'}catch(e){return false}}
+function note(m){const t=$('#toast'); if(!t) return; t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200);}
+function decode(tok){
+  const b=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b),c=>c.charCodeAt(0))));
+}
+const ready=()=>!!(window.google&&google.accounts&&google.accounts.id);
+
+function renderAcct(){
+  const box=$('#acct'); box.textContent='';
+  if(user){
+    const b=document.createElement('button');
+    b.className='acctBtn'; b.title=(user.email||'')+'（押すとログアウト）';
+    if(user.picture){const i=new Image(); i.src=user.picture; i.alt=''; i.referrerPolicy='no-referrer'; b.append(i);}
+    const s=document.createElement('span'); s.textContent=user.name||user.email||'ログイン中'; b.append(s);
+    b.onclick=signOut; box.append(b);
+  }else if(!REQ&&ready()){
+    const d=document.createElement('div'); box.append(d);
+    google.accounts.id.renderButton(d,{type:'standard',size:'medium',text:'signin',shape:'pill',theme:'outline',locale:'ja'});
+  }
+}
+
+async function sendLog(credential){
+  try{
+    const r=await fetch(AUTH.LOG_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({credential,mode:AUTH.MODE,page:location.href,userAgent:navigator.userAgent})});
+    const d=await r.json(); if(!d.ok) console.warn('利用記録に失敗:',d.error);
+  }catch(e){console.warn('利用記録サーバーに接続できません',e);}
+}
+
+function onCredential(res){
+  const p=decode(res.credential);
+  user={name:p.name,email:p.email,picture:p.picture};
+  remember(true);
+  $('#gate').hidden=true;
+  renderAcct();
+  sendLog(res.credential);
+  if(!REQ) note('ログインしました');
+}
+
+function signOut(){
+  if(!confirm('ログアウトしますか？'+(REQ?'\nバミリを使うには、もう一度ログインが必要です。':''))) return;
+  if(ready()) google.accounts.id.disableAutoSelect();
+  user=null; remember(false); renderAcct();
+  if(REQ) $('#gate').hidden=false; else note('ログアウトしました');
+}
+
+function init(){
+  if(!ready()){
+    if(REQ) $('#gateMsg').textContent='Googleログインを読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。';
+    return;
+  }
+  google.accounts.id.initialize({client_id:AUTH.CLIENT_ID, callback:onCredential,
+    auto_select:true, cancel_on_tap_outside:true, use_fedcm_for_prompt:true});
+  if(REQ){
+    google.accounts.id.renderButton($('#gateBtn'),{size:'large',text:'signin_with',shape:'pill',theme:'outline',locale:'ja'});
+    google.accounts.id.prompt(); // 前回ログインした人は自動でログイン
+  }else{
+    renderAcct();
+    if(remembered()) google.accounts.id.prompt(); // 前回ログインした人だけ自動ログイン
+  }
+}
+window.addEventListener('load',init);
+})();
+</script>
 </body>
 </html>
