@@ -204,6 +204,7 @@ img{max-width:100%}
         <button id="zfit">全体</button>
         <span class="spacer"></span>
         <select id="layerSel" aria-label="作業中のレイヤー"></select>
+        <button id="pasteBtn" hidden title="コピーしたものを作業中のレイヤーに貼り付け (Ctrl+V)">貼り付け</button>
         <button id="multiBtn" aria-pressed="false" title="タップで追加選択・なぞって範囲選択">複数選択</button>
         <button id="snapBtn" aria-pressed="true" title="10cm・15°単位でそろえる">スナップ</button>
       </div>
@@ -213,6 +214,7 @@ img{max-width:100%}
         <button data-act="rotR" aria-label="右に15度回転">⟳</button>
         <button data-act="part" id="partBtn">パート</button>
         <button data-act="dir">向き</button>
+        <button data-act="copy">コピー</button>
         <button data-act="dup">複製</button>
         <button data-act="del" class="danger">削除</button>
         <button data-act="edit">詳細</button>
@@ -766,8 +768,18 @@ function addItem(t,label,ex={}){
   doc.items.push(it); commit(); select(it.id);
   toast(`${label||T[t].n} を「${L.name}」に追加`); renderLayers();
 }
+function updPaste(){const c=LS.get('bamiri.clip'); const b=$('#pasteBtn'); if(b) b.hidden=!(c&&c.items&&c.items.length);}
+function doPaste(){
+  const c=LS.get('bamiri.clip'); if(!c||!c.items||!c.items.length){toast('コピーしたものがありません'); return;}
+  const L=activeLayer(); if(!L.vis||L.lock){toast(`「${L.name}」は${L.lock?'ロック中':'非表示'}です。解除するか別のレイヤーを選んでください`); return;}
+  c.n=(c.n||0)+1; LS.set('bamiri.clip',c); const off=30*c.n;
+  const ns=c.items.map(i=>Object.assign(clone(i),{id:uid(),layer:L.id,x:i.x+off,y:i.y+off}));
+  doc.items.push(...ns); commit(); selectMany(ns.map(n=>n.id)); renderStage();
+  toast(`${ns.length}個を「${L.name}」に貼り付けました`);
+}
 function center(its){const xs=its.map(i=>i.x), ys=its.map(i=>i.y); return [(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2];}
 function act(a){
+  if(a==='paste'){doPaste(); return;}
   const its=selItems(); if(!its.length) return;
   const many=its.length>1;
   if(a==='rotL'||a==='rotR'){const d=a==='rotL'?-15:15;
@@ -775,6 +787,9 @@ function act(a){
       its.forEach(i=>{const x=i.x-cx,y=i.y-cy; i.x=Math.round(cx+x*c-y*sn); i.y=Math.round(cy+x*sn+y*c); i.r=norm((i.r||0)+d);});}
     else its[0].r=norm((its[0].r||0)+d);}
   else if(a==='face'){const c=cond(); if(!c){toast('指揮台がありません'); return;} its.forEach(i=>{if(i!==c) i.r=faceAngle(i.x,i.y,c.x,c.y);});}
+  else if(a==='copy'||a==='cut'){LS.set('bamiri.clip',{items:clone(its),n:0}); updPaste();
+    if(a==='cut'){const set=new Set(its); doc.items=doc.items.filter(i=>!set.has(i)); clearSel(); commit(); draw(); renderSel(); renderStage(); toast(`${its.length}個を切り取りました`); return;}
+    toast(`${its.length}個をコピーしました。「貼り付け」で置けます`); return;}
   else if(a==='dup'){const ns=its.map(i=>Object.assign(clone(i),{id:uid(),x:i.x+30,y:i.y+30})); doc.items.push(...ns); commit(); selectMany(ns.map(n=>n.id)); renderStage(); return;}
   else if(a==='del'){const set=new Set(its); doc.items=doc.items.filter(i=>!set.has(i)); clearSel(); commit(); draw(); renderSel(); renderStage(); toast(`${its.length>1?its.length+'個を':''}削除しました（戻す で復元）`); return;}
   else if(a==='front'){const set=new Set(its); doc.items=[...doc.items.filter(i=>!set.has(i)),...its];}
@@ -874,7 +889,7 @@ function renderSel(){
     ${isText?`<div class="field"><label for="fH">文字サイズ</label><input id="fH" class="num" type="number" min="10" step="2" value="${it.h}"></div>`:''}
     <div class="field"><label>位置（m）</label><span class="num" style="font-size:12px;color:var(--muted)">センターから ${f1((it.x-doc.W/2)/100)} ／ 前端から ${f1((doc.D-it.y)/100)}</span></div>
     </div></div>
-    <div class="row">${isPart(it)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="face">指揮者へ向ける</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">削除</button></div>
+    <div class="row">${isPart(it)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="face">指揮者へ向ける</button><button data-a="copy">コピー</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">削除</button></div>
     <div class="row"><button data-a="same">同じパートをすべて選択</button><button data-a="all">作業中レイヤーを全選択</button></div>
     <div class="row"><button id="toCustom">この形を「カスタム楽器」に登録</button></div>`;
   const bind=(id,fn)=>{const el=$(id); if(!el) return; el.addEventListener('input',()=>{fn(el.value); drawSoon();}); el.addEventListener('change',()=>{commit(); renderStage();});};
@@ -908,7 +923,7 @@ function renderMulti(p){
     <div class="grp"><h3>並べる</h3><div class="row">
       <button data-a="arc">指揮者を中心に弧に並べる</button><button data-a="alignH">横一列にそろえる</button><button data-a="alignV">縦にそろえる</button><button data-a="distH">左右を等間隔に</button></div></div>
     <div class="grp"><h3>操作</h3><div class="row">
-      ${its.some(isPart)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="rotL">⟲ 15°</button><button data-a="rotR">⟳ 15°</button><button data-a="face">指揮者へ向ける</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">${its.length}個を削除</button><button data-a="none">選択解除</button></div></div>`;
+      ${its.some(isPart)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="rotL">⟲ 15°</button><button data-a="rotR">⟳ 15°</button><button data-a="face">指揮者へ向ける</button><button data-a="copy">コピー</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">${its.length}個を削除</button><button data-a="none">選択解除</button></div></div>`;
   p.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.a)));
   const ch=(id,fn)=>{const el=$(id); el.addEventListener('change',()=>{if(el.value==='') return; fn(el.value); commit(); draw(); renderSel(); renderStage();});};
   ch('#mLabel',v=>its.forEach(i=>{i.label=v; if(i.t==='player'||i.t==='standing'){const s=secOf(v); if(s) i.sec=s;}}));
@@ -1107,6 +1122,7 @@ let tt=0; function toast(m){const t=$('#toast'); t.textContent=m; t.classList.ad
 $('#title').addEventListener('input',e=>{doc.title=e.target.value;}); $('#title').addEventListener('change',commit);
 $('#undo').onclick=undo; $('#redo').onclick=redo;
 $('#zin').onclick=()=>setZoom(zoom*1.25); $('#zout').onclick=()=>setZoom(zoom/1.25); $('#zfit').onclick=()=>setZoom(1);
+$('#pasteBtn').onclick=()=>doPaste(); updPaste();
 $('#multiBtn').onclick=e=>{multiMode=!multiMode; e.currentTarget.setAttribute('aria-pressed',multiMode); toast(multiMode?'複数選択オン：タップで追加、なぞって範囲選択（画面の移動はオフにすると戻ります）':'複数選択オフ');};
 $('#snapBtn').onclick=e=>{snap=!snap; e.currentTarget.setAttribute('aria-pressed',snap);};
 document.addEventListener('keydown',e=>{
@@ -1119,6 +1135,8 @@ document.addEventListener('keydown',e=>{
   if(!$('#sheet').hidden) return;
   if(e.key==='Escape'){ if(!$('#ov').hidden) $('#ov').hidden=true; else if(sels.size) select(null); return;}
   if(mod&&e.key.toLowerCase()==='a'){e.preventDefault(); act('all'); return;}
+  if(mod&&e.key.toLowerCase()==='v'){e.preventDefault(); doPaste(); return;}
+  if(mod&&(e.key.toLowerCase()==='c'||e.key.toLowerCase()==='x')&&sels.size){e.preventDefault(); act(e.key.toLowerCase()==='c'?'copy':'cut'); return;}
   const it=sel&&get(sel); if(!it) return;
   if(mod&&e.key.toLowerCase()==='d'){e.preventDefault(); act('dup'); return;}
   if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault(); act('del'); return;}
