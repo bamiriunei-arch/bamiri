@@ -239,8 +239,8 @@ img{max-width:100%}
   <div class="gateCard" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
     <div class="brand"><span class="tape" aria-hidden="true"></span><b>バミリ</b><small>舞台配置図</small></div>
     <h2 id="gateTitle">Googleアカウントでログインして使います</h2>
-    <p class="hint">ログインすると、名前・メールアドレス・利用日時が作成者に記録されます。配置や奏者名は送られず、これまでどおりこの端末の中だけに保存されます。</p>
     <div id="gateBtn"></div>
+    <p class="hint"><a class="fbLink" href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
     <p class="gateMsg" id="gateMsg" role="status"></p>
   </div>
 </div>
@@ -1133,10 +1133,10 @@ const FEEDBACK_URL='https://forms.gle/HpXuHj7YCkBAsbGt9';
 const ABOUT=`<div class="about"><h3>このツールについて</h3><ul>
   <li>個人が作成し、無料で公開しているツールです。</li>
   <li>入力した配置や奏者名は、この端末のブラウザの中だけに保存されます。作成者やほかの人に送られることはありません。</li>
-  <li>利用にはGoogleアカウントでのログインが必要です。ログインすると、名前・メールアドレス・利用日時が作成者に記録されます。配置や奏者名は送られません。</li>
   <li>利用状況を知るため、任意の <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">利用者アンケート</a> をお願いすることがあります。答えるかどうかは自由です。</li>
   <li>動作や表示の正確さは保証できません。本番の配置は、会場や関係者と必ず確認してください。</li>
-  <li>不具合や「こうしてほしい」は <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">ご意見フォーム</a> からどうぞ。</li></ul></div>`;
+  <li>不具合や「こうしてほしい」は <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">ご意見フォーム</a> からどうぞ。</li>
+  <li><a class="fbLink" href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></li></ul></div>`;
 const GUIDE=[
   {t:'まずはステージを用意',b:['「ステージ」タブで吹奏楽・オーケストラ・バンドのプリセットを読み込むか、「空のステージ」から始めます。','間口と奥行はm単位で変えられます。目盛りはセンターからの距離です。','「追加」タブで奏者や楽器をタップすると、ステージに置かれます。パート未定の奏者を置いて、あとから「パート」で選ぶこともできます。']},
   {t:'動かす・そろえる',b:['ドラッグで移動、黄色い丸をドラッグで回転。','Shift／Ctrl＋クリックや、何もないところのドラッグで複数選択。スマホは右上の「複数選択」をオンにしてタップ／なぞります。','「向き」で方向をそろえたり、指揮者や好きな点に向けたりできます。複数選んで「指揮者を中心に弧に並べる」も便利です。']},
