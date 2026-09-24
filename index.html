@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="吹奏楽・オーケストラ・バンドの舞台配置図をスマホやPCで作って画像にできる無料ツール">
+<meta name="theme-color" content="#16191C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316191C'/%3E%3Crect x='6' y='13' width='20' height='7' rx='1' fill='%23E3B23C' transform='rotate(-10 16 16)'/%3E%3C/svg%3E">
+<title>バミリ配置図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#EDEFEC; --panel:#FFFFFF; --ink:#1B211F; --muted:#5C6662; --line:#D4D9D6;
+  --chip:#F3F5F3; --chip-h:#E6EAE7; --accent:#E3B23C; --accent-ink:#1B1A14; --danger:#C2412F;
+  --stagebg:#16191C;
+  --ui:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ color-scheme:dark;
+    --bg:#111315; --panel:#1A1D20; --ink:#E7EBE9; --muted:#9AA39F; --line:#2D3236;
+    --chip:#22262A; --chip-h:#2C3136; --danger:#E0664F; }
+}
+:root[data-theme="dark"]{ color-scheme:dark;
+  --bg:#111315; --panel:#1A1D20; --ink:#E7EBE9; --muted:#9AA39F; --line:#2D3236;
+  --chip:#22262A; --chip-h:#2C3136; --danger:#E0664F; }
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--ui); font-size:14px}
+.shell{height:100%; display:flex; flex-direction:column; padding-inline:16px; padding-block:12px; box-sizing:border-box; gap:10px}
+header{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.brand{display:flex; align-items:baseline; gap:8px}
+.brand b{font-size:20px; letter-spacing:.04em}
+.brand .tape{display:inline-block; width:22px; height:8px; background:var(--accent); transform:rotate(-8deg); border-radius:1px}
+.brand small{color:var(--muted); font-size:12px}
+.titleIn{flex:1 1 220px; min-width:0; font:inherit; font-weight:700; font-size:15px; background:transparent; color:var(--ink); border:1px solid transparent; border-radius:6px; padding:6px 8px}
+.titleIn:hover,.titleIn:focus{border-color:var(--line); background:var(--panel); outline:none}
+.hbtns{display:flex; gap:6px; flex-wrap:wrap}
+button{font:inherit; color:var(--ink); background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:6px 10px; cursor:pointer}
+button:hover,.btnLink:hover{background:var(--chip-h)}
+.btnLink{display:inline-flex; align-items:center; font:inherit; color:var(--ink); background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:6px 10px; text-decoration:none}
+.btnLink:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+button:disabled{opacity:.4; cursor:default}
+button.primary{background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:700}
+button.primary:hover{filter:brightness(1.05)}
+button.danger{color:var(--danger)}
+
+.app{flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:12px}
+.stageCol{position:relative; min-height:0; display:flex; flex-direction:column; background:var(--stagebg); border-radius:10px; overflow:hidden}
+.vp{flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch}
+#svg{display:block; width:100%; height:auto; user-select:none; -webkit-user-select:none}
+#svg .it{cursor:grab; touch-action:none}
+#svg [data-handle]{cursor:alias; touch-action:none}
+.ctl{position:absolute; top:8px; left:8px; right:8px; display:flex; gap:6px; flex-wrap:wrap; pointer-events:none}
+.ctl > *{pointer-events:auto}
+.ctl button,.selbar button{background:rgba(30,34,38,.88); color:#E7EBE9; border-color:#3a4046; padding:5px 9px; font-size:13px}
+.ctl button:hover,.selbar button:hover{background:rgba(52,58,64,.95)}
+.ctl button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.zoomv{font-family:var(--mono); color:#C9CFD3; font-size:12px; align-self:center; min-width:40px; text-align:center}
+.spacer{flex:1}
+.selbar{position:absolute; left:8px; right:8px; bottom:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+.selbar .tag{background:var(--accent); color:var(--accent-ink); font-weight:700; border-radius:6px; padding:5px 10px; font-size:13px; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.selbar button.danger{color:#F19A87}
+
+aside{min-height:0; display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden}
+.tabs{display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line)}
+.tabs button{border:0; border-radius:0; background:transparent; padding:10px 2px; color:var(--muted); font-weight:500; border-bottom:2px solid transparent; font-size:13px; white-space:nowrap}
+.ctl select{background:rgba(30,34,38,.88); color:#E7EBE9; border:1px solid #3a4046; border-radius:6px; font:inherit; font-size:13px; padding:5px 6px; max-width:150px}
+.layers{display:flex; flex-direction:column; gap:6px}
+.lyr{display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:6px; border:1px solid var(--line); border-radius:8px; padding:6px 6px 6px 8px; cursor:pointer}
+.lyr.on{border-color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, var(--panel))}
+.lyr.off{opacity:.55}
+.lyr input.nm{font:inherit; font-weight:700; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:5px; padding:4px 6px; min-width:0; width:100%; box-sizing:border-box}
+.lyr input.nm:focus{border-color:var(--line); background:var(--chip); outline:none}
+.lyr .meta{font-size:11px; color:var(--muted); padding-left:6px}
+.lyr .btns{display:flex; gap:3px}
+.ib{padding:4px 6px; line-height:0; background:transparent; border-color:transparent}
+.ib svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.ib[aria-pressed="true"]{background:var(--chip-h); border-color:var(--line)}
+.ib.warn[aria-pressed="true"]{color:var(--danger)}
+.radio{width:14px; height:14px; border-radius:50%; border:2px solid var(--muted); box-sizing:border-box}
+.lyr.on .radio{border-color:var(--accent); background:radial-gradient(var(--accent) 45%, transparent 50%)}
+.badge{font-size:11px; background:var(--accent); color:var(--accent-ink); border-radius:4px; padding:1px 6px; font-weight:700}
+.target{display:flex; align-items:center; gap:8px; font-size:13px; background:var(--chip); border:1px solid var(--line); border-radius:8px; padding:8px 10px}
+.target b{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bgThumb{width:100%; max-height:120px; object-fit:contain; background:var(--chip); border:1px solid var(--line); border-radius:6px}
+input[type=range]{width:100%; accent-color:var(--accent)}
+.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent); font-weight:700}
+.pane{flex:1; overflow:auto; padding:14px; display:flex; flex-direction:column; gap:16px}
+.grp h3{margin:0 0 8px; font-size:11px; letter-spacing:.12em; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:6px}
+.dot{width:9px; height:9px; border-radius:2px; display:inline-block; border:1px solid rgba(0,0,0,.25)}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chips button{padding:5px 9px; font-size:13px; display:inline-flex; align-items:center; gap:6px}
+.hint{color:var(--muted); font-size:12px; line-height:1.6; margin:0}
+.field{display:grid; grid-template-columns:88px 1fr; align-items:center; gap:8px}
+.field label{color:var(--muted); font-size:12px}
+.field input,.field select,textarea{font:inherit; color:var(--ink); background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:6px 8px; min-width:0; width:100%; box-sizing:border-box}
+.num{font-family:var(--mono)}
+.row{display:flex; gap:6px; flex-wrap:wrap}
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.counts{display:flex; flex-wrap:wrap; gap:4px}
+.counts span{font-size:12px; background:var(--chip); border:1px solid var(--line); border-radius:4px; padding:2px 6px}
+.counts span b{font-family:var(--mono); margin-left:4px}
+.total{font-size:13px}
+.total b{font-family:var(--mono); font-size:18px}
+.saves{display:flex; flex-direction:column; gap:6px}
+.save{display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:8px; padding:8px}
+.save div{flex:1; min-width:0}
+.save strong{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.save small{color:var(--muted); font-family:var(--mono); font-size:11px}
+textarea{font-family:var(--mono); font-size:11px; height:90px; resize:vertical}
+.check{display:flex; align-items:center; gap:8px}
+
+.toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:#1B211F; color:#fff; padding:8px 14px; border-radius:8px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:30}
+.toast.on{opacity:1}
+
+.ov{position:fixed; inset:0; background:rgba(10,12,14,.72); display:flex; align-items:center; justify-content:center; padding:16px; z-index:20}
+.ov .card{background:var(--panel); color:var(--ink); border-radius:12px; max-width:960px; width:100%; max-height:100%; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:12px; box-sizing:border-box}
+.ov img{width:100%; height:auto; border:1px solid var(--line); border-radius:6px; background:#fff}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.seg button{border:0; border-radius:0}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); font-weight:700}
+
+@media (max-width:820px){
+  html,body{height:auto}
+  .shell{height:auto}
+  .app{display:flex; flex-direction:column}
+  .stageCol{height:62vh; flex:none}
+  aside{min-height:420px}
+  .pane{overflow:visible}
+}
+.sheetOv{align-items:flex-end}
+.sheetOv .card{max-width:560px; max-height:80vh; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.dirgrid{display:grid; grid-template-columns:repeat(3,64px); grid-template-rows:repeat(3,52px); gap:6px; justify-content:center}
+.dirgrid button{font-size:22px; padding:0}
+.dirgrid .mid{font-size:12px; font-weight:700; background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.sheetHead{display:flex; align-items:center; gap:8px}
+.sheetHead strong{flex:1; font-size:16px}
+.warnNote{margin:0; font-size:13px; line-height:1.6; padding:8px 10px; border-radius:8px; background:color-mix(in srgb, var(--danger) 12%, var(--panel)); color:var(--ink); border:1px solid color-mix(in srgb, var(--danger) 40%, var(--line))}
+.guide{max-width:560px}
+.guide .step{font-family:var(--mono); font-size:12px; color:var(--muted)}
+.guide h2{margin:0; font-size:20px; text-wrap:balance}
+.guide ul{margin:0; padding-left:1.2em; display:flex; flex-direction:column; gap:6px; line-height:1.65}
+.guide .dots{display:flex; gap:6px}
+.guide .dots i{width:8px; height:8px; border-radius:50%; background:var(--line)}
+.guide .dots i.on{background:var(--accent)}
+.fbLink{color:var(--ink); font-weight:700}
+.survey{position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px)); max-width:360px; left:auto; background:var(--panel); color:var(--ink); border:1px solid var(--accent); border-radius:12px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:15; display:flex; flex-direction:column; gap:10px}
+.survey p{margin:0; font-size:13px; line-height:1.6}
+.primaryLink{background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:700}
+@media (max-width:520px){.survey{left:16px; right:16px; max-width:none}}
+.about{border-top:1px solid var(--line); padding-top:12px}
+.about h3{margin:0 0 6px; font-size:12px; letter-spacing:.1em; color:var(--muted)}
+.about ul{font-size:12.5px; color:var(--muted); gap:4px}
+@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+</style>
+<style>
+:root{color-scheme:light; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0; font-size:14px; -webkit-text-size-adjust:100%}
+img{max-width:100%}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+  <header>
+    <div class="brand"><span class="tape" aria-hidden="true"></span><b>バミリ</b><small>舞台配置図</small></div>
+    <input id="title" class="titleIn" aria-label="公演名・タイトル" placeholder="公演名（画像の上に入ります）">
+    <div class="hbtns">
+      <button id="helpBtn">使い方</button>
+      <a id="fbBtn" class="btnLink" href="https://forms.gle/HpXuHj7YCkBAsbGt9" target="_blank" rel="noopener">ご意見</a>
+      <button id="undo" title="元に戻す (Ctrl+Z)">↶ 戻す</button>
+      <button id="redo" title="やり直す (Ctrl+Y)">↷ 進む</button>
+      <button id="exportBtn" class="primary">画像にする</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <div class="stageCol">
+      <div class="vp" id="vp"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="ctl">
+        <button id="zout" aria-label="縮小">−</button>
+        <span class="zoomv" id="zv">100%</span>
+        <button id="zin" aria-label="拡大">＋</button>
+        <button id="zfit">全体</button>
+        <span class="spacer"></span>
+        <select id="layerSel" aria-label="作業中のレイヤー"></select>
+        <button id="multiBtn" aria-pressed="false" title="タップで追加選択・なぞって範囲選択">複数選択</button>
+        <button id="snapBtn" aria-pressed="true" title="10cm・15°単位でそろえる">スナップ</button>
+      </div>
+      <div class="selbar" id="selbar" hidden>
+        <span class="tag" id="selTag"></span>
+        <button data-act="rotL" aria-label="左に15度回転">⟲</button>
+        <button data-act="rotR" aria-label="右に15度回転">⟳</button>
+        <button data-act="part" id="partBtn">パート</button>
+        <button data-act="dir">向き</button>
+        <button data-act="dup">複製</button>
+        <button data-act="del" class="danger">削除</button>
+        <button data-act="edit">詳細</button>
+      </div>
+    </div>
+
+    <aside>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="add" aria-selected="true">追加</button>
+        <button role="tab" data-tab="sel" aria-selected="false">選択中</button>
+        <button role="tab" data-tab="layer" aria-selected="false">レイヤー</button>
+        <button role="tab" data-tab="stage" aria-selected="false">ステージ</button>
+        <button role="tab" data-tab="save" aria-selected="false">保存</button>
+      </div>
+      <div class="pane" id="pane-add"></div>
+      <div class="pane" id="pane-sel" hidden></div>
+      <div class="pane" id="pane-layer" hidden></div>
+      <div class="pane" id="pane-stage" hidden></div>
+      <div class="pane" id="pane-save" hidden></div>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="survey" id="survey" hidden role="region" aria-label="利用者アンケートのお願い">
+  <p><b>バミリを使ってくれてありがとうございます</b><br>今後の改善のため、所属や使い方を教えてください（1分・任意・名前は不要）。</p>
+  <div class="row"><a class="btnLink primaryLink" id="svGo" href="https://forms.gle/HpXuHj7YCkBAsbGt9" target="_blank" rel="noopener">アンケートに答える</a><button id="svLater">あとで</button><button id="svNever">今後表示しない</button></div>
+</div>
+<div class="ov" id="guide" hidden><div class="card guide" role="dialog" aria-modal="true" aria-labelledby="gTitle" id="guideBody"></div></div>
+<div class="ov sheetOv" id="sheet" hidden><div class="card" id="sheetBody" role="dialog" aria-modal="true"></div></div>
+<div class="ov" id="ov" hidden>
+  <div class="card">
+    <div class="row" style="align-items:center">
+      <strong style="font-size:16px">画像として書き出し</strong><span class="spacer" style="flex:1"></span>
+      <button id="ovClose">閉じる</button>
+    </div>
+    <div class="row" style="align-items:center">
+      <div class="seg"><button id="mDark" aria-pressed="true">黒ステージ</button><button id="mPrint" aria-pressed="false">白（印刷向け）</button></div>
+      <label class="check"><input type="checkbox" id="oCounts" checked> 編成を入れる</label>
+      <label class="check"><input type="checkbox" id="oNames" checked> 奏者名を入れる</label>
+      <label class="check" id="oBgWrap"><input type="checkbox" id="oBg" checked> 背景画像を入れる</label>
+    </div>
+    <p class="warnNote" id="nameWarn" hidden>奏者名が入っています。生徒などの名前入りの画像は、SNSや誰でも見られる場所には載せないでください。</p>
+    <img id="outImg" alt="書き出した配置図">
+    <div class="row" style="align-items:center">
+      <p class="hint" style="flex:1">「画像を保存」で保存できます。スマホは画像の長押しでも保存できます。</p>
+      <button id="dlImg" class="primary" hidden>画像を保存</button>
+      <button id="copyImg">画像をコピー</button>
+    </div>
+    <div class="row" style="align-items:center">
+      <p class="hint" style="flex:1">よければ <a class="fbLink" id="svLink2" href="https://forms.gle/HpXuHj7YCkBAsbGt9" target="_blank" rel="noopener">利用者アンケート（1分・任意）</a> にもご協力ください。今後の改善に使います。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+const STANDALONE=true; // Claude外に置く版ではtrue（ファイル保存が使える）
+const K='#15181B', STAND='#DFE4EA';
+const FONT="'Zen Kaku Gothic New','Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',sans-serif";
+const SEC={
+  ww:{n:'木管',c:'#86BDEB'}, br:{n:'金管',c:'#F2C14E'}, str:{n:'弦',c:'#8FD3A0'},
+  perc:{n:'打楽器',c:'#EE8A7A'}, key:{n:'鍵盤',c:'#C7A6EC'}, band:{n:'バンド',c:'#F5A45D'},
+  cond:{n:'指揮',c:'#F4F4F2'}, gear:{n:'機材',c:'#A9B2BC'}, etc:{n:'その他',c:'#E4D8C4'}
+};
+const T={
+  player:{n:'奏者（椅子）',w:46,h:46,sec:'ww',label:'Fl'},
+  standing:{n:'奏者（立ち）',w:50,h:50,sec:'band',label:'Vo'},
+  conductor:{n:'指揮台',w:90,h:90,sec:'cond',label:'指揮'},
+  stand:{n:'譜面台',w:54,h:10,sec:'gear',label:''},
+  circle:{n:'打楽器（丸）',w:72,h:72,sec:'perc',label:'Timp'},
+  bd:{n:'大太鼓',w:90,h:55,sec:'perc',label:'B.D.'},
+  mallet:{n:'鍵盤打楽器',w:250,h:90,sec:'perc',label:'Mar'},
+  drums:{n:'ドラムセット',w:190,h:160,sec:'band',label:'Dr'},
+  piano:{n:'グランドピアノ',w:150,h:240,sec:'key',label:'Pf'},
+  keyboard:{n:'キーボード',w:140,h:45,sec:'key',label:'Key'},
+  amp:{n:'アンプ',w:70,h:40,sec:'gear',label:'Amp'},
+  wedge:{n:'モニター',w:66,h:46,sec:'gear',label:'Mon'},
+  mic:{n:'マイク',w:28,h:28,sec:'gear',label:'Mic'},
+  riser:{n:'平台',w:182,h:91,sec:'etc',label:'平台'},
+  box:{n:'四角',w:120,h:60,sec:'etc',label:'机'},
+  text:{n:'テキスト',w:200,h:30,sec:'etc',label:'テキスト'},
+  stairs:{n:'階段',w:180,h:90,sec:'etc',label:'階段'},
+  arrow:{n:'矢印',w:200,h:20,sec:'etc',label:''},
+  line:{n:'線',w:300,h:6,sec:'etc',label:''}
+};
+const SECMAP={
+  ww:['Pic','Fl','Ob','E.H.','Fg','C.Fg','E♭Cl','Cl','Cl1','Cl2','Cl3','A.Cl','B.Cl','S.Sax','A.Sax','T.Sax','B.Sax'],
+  br:['Tp','Cor','Hn','Tb','B.Tb','Euph','Tuba'],
+  str:['Vn1','Vn2','Va','Vc','Cb','St.B','Hp'],
+  perc:['Perc','Timp'], key:['Pf','Cel'], band:['Vo','Gt','Ba','Key','Dr','Cho']
+};
+const secOf=l=>{for(const k in SECMAP) if(SECMAP[k].includes(l)) return k; return null};
+const RESIZABLE=new Set(['player','standing','circle','bd','mallet','drums','piano','keyboard','amp','wedge','riser','box','stand','stairs','arrow','line','mic']);
+
+const PAL=[
+  {g:'パート未定（置いてから選ぶ）',sec:'etc',items:[['player','未定',{sec:'etc'}],['standing','未定',{sec:'etc'}]]},
+  {g:'木管',sec:'ww',items:['Pic','Fl','Ob','Fg','E♭Cl','Cl1','Cl2','Cl3','B.Cl','A.Sax','T.Sax','B.Sax'].map(l=>['player',l])},
+  {g:'金管',sec:'br',items:['Tp','Hn','Tb','B.Tb','Euph','Tuba'].map(l=>['player',l])},
+  {g:'弦',sec:'str',items:['Vn1','Vn2','Va','Vc','Cb','St.B','Hp'].map(l=>['player',l])},
+  {g:'打楽器',sec:'perc',items:[
+    ['player','Perc'],['circle','Timp',{w:72,v:'ring'}],['bd','B.D.'],['circle','S.D.',{w:40,h:40}],
+    ['circle','Cym',{w:50,h:50,v:'cym'}],['circle','Gong',{w:90,h:90,v:'cym'}],
+    ['mallet','Mar',{w:250,h:90}],['mallet','Xylo',{w:170,h:70}],['mallet','Vib',{w:140,h:80}],
+    ['mallet','Glk',{w:90,h:50}],['mallet','Chime',{w:130,h:55,v:'chime'}],['box','小物台',{w:120,h:60,sec:'perc'}]]},
+  {g:'鍵盤',sec:'key',items:[['piano','Pf'],['keyboard','Key'],['player','Pf']]},
+  {g:'バンド',sec:'band',items:[['standing','Vo'],['standing','Gt'],['standing','Ba'],['standing','Key'],['standing','Cho'],
+    ['drums','Dr'],['amp','Gt.Amp'],['amp','B.Amp',{w:66,h:56}],['wedge','Mon'],['mic','Mic']]},
+  {g:'ステージ',sec:'etc',items:[['conductor','指揮'],['stand',''],['riser','平台 3×6',{w:182,h:91}],['riser','平台 6×6',{w:182,h:182}],['riser','平台 3×3',{w:91,h:91}],['stairs','階段']]},
+  {g:'その他',sec:'etc',items:[['player','椅子',{v:'nostand',sec:'etc'}],['box','ピアノ椅子',{w:60,h:35}],['box','演台',{w:70,h:50}],['box','机',{w:120,h:60}],
+    ['amp','SP',{w:60,h:45,sec:'gear'}],['circle','花',{w:60,h:60,v:'flower',col:'#9BCB7A'}],['box','反響板',{w:300,h:24}],['box','出入口',{w:120,h:30,col:'#6FAF8F'}],
+    ['circle','丸',{w:60,h:60}],['box','四角',{w:100,h:60}],['arrow','矢印'],['line','線'],['line','点線',{v:'dash'}],['text','テキスト'],['text','メモ',{h:18}]]}
+];
+
+/* ---------- state ---------- */
+const uid=()=>'i'+Math.random().toString(36).slice(2,9);
+const clone=o=>JSON.parse(JSON.stringify(o));
+function mk(t,label,x,y,ex={}){
+  const d=T[t];
+  const sec=ex.sec||((t==='player'||t==='standing')?(secOf(label)||d.sec):d.sec);
+  return Object.assign({id:uid(),t,x:Math.round(x),y:Math.round(y),r:0,label:label??d.label,name:'',sec,w:d.w,h:d.h},ex,{sec});
+}
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const faceAngle=(x,y,cx,cy)=>Math.round(deg(Math.atan2(-(cx-x),(cy-y))));
+function arcRow(labels,r,sp,cx,cy,off=0){
+  const n=labels.length, span=sp*(n-1)/r, a0=rad(off)-span/2;
+  return labels.map((l,i)=>{const a=n>1?a0+span*i/(n-1):rad(off);
+    const it=mk('player',l,cx+r*Math.sin(a),cy-r*Math.cos(a)); it.r=Math.round(deg(a)); return it;});
+}
+function fan(l,n,r,a0,a1,cx,cy){
+  const out=[]; for(let i=0;i<n;i++){const a=rad(n>1?a0+(a1-a0)*i/(n-1):(a0+a1)/2);
+    const it=mk('player',l,cx+r*Math.sin(a),cy-r*Math.cos(a)); it.r=Math.round(deg(a)); out.push(it);} return out;
+}
+function risersArc(r,a0,a1,cx,cy,label){
+  const L=r*rad(a1-a0), n=Math.ceil(L/182), out=[];
+  for(let i=0;i<n;i++){const a=rad(a0+(a1-a0)*(i+.5)/n);
+    const it=mk('riser',label,cx+r*Math.sin(a),cy-r*Math.cos(a)); it.r=Math.round(deg(a)); out.push(it);} return out;
+}
+
+const PRESETS={
+  wind:{n:'吹奏楽（約50名）',f(){
+    const W=1600,D=1000,cx=800,cy=880,it=[];
+    it.push(...risersArc(462,-47,47,cx,cy,'平台 1段'),...risersArc(577,-34,34,cx,cy,'平台 2段'));
+    it.push(...arcRow(['Fl','Fl','Fl','Pic','Ob','Ob','Cl1','Cl1','Cl1'],230,72,cx,cy));
+    it.push(...arcRow(['A.Sax','A.Sax','T.Sax','B.Sax','Fg','Fg','Cl2','Cl2','Cl3','Cl3','B.Cl'],345,74,cx,cy));
+    it.push(...arcRow(['Hn','Hn','Hn','Hn','Euph','Euph','Tuba','Tuba','St.B'],462,80,cx,cy));
+    it.push(...arcRow(['Tp','Tp','Tp','Tp','Tb','Tb','Tb','B.Tb'],577,80,cx,cy));
+    it.push(mk('circle','32"',330,240,{w:80,h:80,v:'ring'}),mk('circle','29"',415,190,{w:74,h:74,v:'ring'}),
+      mk('circle','26"',505,170,{w:66,h:66,v:'ring'}),mk('circle','23"',590,195,{w:58,h:58,v:'ring'}));
+    it.push(mk('bd','B.D.',700,115),mk('circle','S.D.',770,220,{w:40,h:40}),mk('circle','Cym',655,215,{w:50,h:50,v:'cym'}),
+      mk('box','小物台',875,225,{w:120,h:60,sec:'perc'}),mk('mallet','Mar',1000,115,{w:250,h:90}),
+      mk('mallet','Xylo',1065,228,{w:170,h:70}),mk('mallet','Vib',1275,120,{w:140,h:80}),
+      mk('mallet','Glk',1275,228,{w:90,h:50}),Object.assign(mk('mallet','Chime',1430,175,{w:130,h:55,v:'chime'}),{r:90}));
+    it.push(mk('conductor','指揮',cx,cy));
+    return {title:'定期演奏会 第1部',W,D,items:it};
+  }},
+  windS:{n:'吹奏楽（小編成・約25名）',f(){
+    const W=1200,D=820,cx=600,cy=710,it=[];
+    it.push(...risersArc(432,-50,50,cx,cy,'平台 1段'));
+    it.push(...arcRow(['Fl','Fl','Ob','Cl1','Cl1','Cl2'],215,76,cx,cy));
+    it.push(...arcRow(['A.Sax','A.Sax','T.Sax','B.Sax','Cl2','Cl3','B.Cl'],322,76,cx,cy));
+    it.push(...arcRow(['Hn','Hn','Tp','Tp','Tp','Tb','Tb','Euph','Tuba'],432,80,cx,cy));
+    it.push(mk('circle','29"',330,175,{w:74,h:74,v:'ring'}),mk('circle','26"',415,140,{w:66,h:66,v:'ring'}),
+      mk('bd','B.D.',520,105),mk('circle','S.D.',590,185,{w:40,h:40}),mk('box','小物台',690,190,{w:110,h:55,sec:'perc'}),
+      mk('mallet','Mar',810,100,{w:220,h:80}),mk('mallet','Glk',880,195,{w:90,h:50}));
+    it.push(mk('conductor','指揮',cx,cy));
+    return {title:'アンサンブル発表会',W,D,items:it};
+  }},
+  orch:{n:'オーケストラ（2管・通常配置）',f(){
+    const W=1600,D=1100,cx=800,cy=960,it=[];
+    it.push(...risersArc(590,-44,16,cx,cy,'平台 1段'),...risersArc(680,-10,34,cx,cy,'平台 2段'));
+    it.push(...fan('Vn1',3,210,-84,-52,cx,cy),...fan('Vn1',4,300,-84,-50,cx,cy),...fan('Vn1',4,390,-82,-50,cx,cy));
+    it.push(...fan('Vn2',2,210,-40,-14,cx,cy),...fan('Vn2',3,300,-42,-12,cx,cy),...fan('Vn2',4,390,-42,-10,cx,cy));
+    it.push(...fan('Va',2,210,14,40,cx,cy),...fan('Va',3,300,12,42,cx,cy),...fan('Va',3,390,12,42,cx,cy));
+    it.push(...fan('Vc',3,210,52,84,cx,cy),...fan('Vc',3,300,52,84,cx,cy));
+    it.push(...fan('Cb',2,425,58,80,cx,cy),...fan('Cb',2,505,58,78,cx,cy));
+    it.push(...arcRow(['Fl','Fl','Ob','Ob'],500,80,cx,cy),...arcRow(['Cl','Cl','Fg','Fg'],590,80,cx,cy));
+    it.push(...fan('Hn',4,590,-40,-20,cx,cy),...arcRow(['Tp','Tp','Tb','Tb','B.Tb','Tuba'],680,84,cx,cy,12));
+    it.push(mk('circle','Timp',470,240,{w:74,h:74,v:'ring'}),mk('circle','Timp',555,205,{w:66,h:66,v:'ring'}),
+      mk('bd','B.D.',1180,215),mk('circle','Cym',1270,250,{w:50,h:50,v:'cym'}),mk('box','小物台',1300,170,{w:120,h:60,sec:'perc'}));
+    const hp=mk('player','Hp',330,720); hp.r=faceAngle(330,720,cx,cy); it.push(hp);
+    it.push(mk('conductor','指揮',cx,cy));
+    return {title:'オーケストラ演奏会',W,D,items:it};
+  }},
+  band:{n:'バンド（5人編成）',f(){
+    const W=900,D=600,it=[];
+    it.push(mk('riser','ドラム台',450,150,{w:240,h:182}),mk('drums','Dr',450,150));
+    it.push(mk('amp','B.Amp',230,85,{w:66,h:56}),mk('amp','Gt.Amp',670,85));
+    it.push(mk('standing','Ba',250,270),mk('standing','Gt',650,270),mk('standing','Vo',450,420));
+    it.push(mk('standing','Key',150,300),mk('keyboard','Key',150,360));
+    it.push(mk('mic','Mic',450,468),mk('mic','Mic',650,318),mk('mic','Mic',150,410));
+    it.push(mk('wedge','Mon1',450,555),mk('wedge','Mon2',650,370),mk('wedge','Mon3',250,370),mk('wedge','Mon4',60,420));
+    const sf=mk('wedge','Mon5',300,175); sf.r=90; it.push(sf);
+    return {title:'ライブ ステージプロット',W,D,items:it};
+  }},
+  empty:{n:'空のステージ',f(){return {title:'',W:1400,D:900,items:[]}}}
+};
+
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v)); return true}catch(e){return false}}};
+
+/* layers */
+const isPlayer=i=>i.t==='player'||i.t==='standing'||i.t==='conductor';
+function withLayers(d){
+  const Ls=[{id:uid(),name:'平台',vis:true,lock:true},{id:uid(),name:'打楽器・機材',vis:true,lock:false},{id:uid(),name:'奏者',vis:true,lock:false}];
+  const of=i=>i.t==='riser'?0:isPlayer(i)?2:1;
+  d.items.forEach(i=>i.layer=Ls[of(i)].id);
+  d.layers=d.items.length?Ls:[{id:uid(),name:'レイヤー1',vis:true,lock:false}];
+  d.active=d.layers[d.layers.length-1].id; return d;
+}
+function fixDoc(d){
+  if(!Array.isArray(d.layers)||!d.layers.length) d.layers=[{id:uid(),name:'レイヤー1',vis:true,lock:false}];
+  const ids=new Set(d.layers.map(l=>l.id)), top=d.layers[d.layers.length-1].id;
+  d.items.forEach(i=>{if(!ids.has(i.layer)) i.layer=top;});
+  if(!ids.has(d.active)) d.active=top;
+  if(d.showNames===undefined) d.showNames=true;
+  if(d.solo===undefined) d.solo=true;
+  if(d.bg===undefined) d.bg=null;
+  return d;
+}
+function fromPreset(k){const d=withLayers(PRESETS[k].f()); d.bg=null; return fixDoc(d);}
+
+let doc=LS.get('bamiri.current');
+doc=(!doc||!Array.isArray(doc.items))?fromPreset('wind'):fixDoc(doc);
+let bgSrc=null; try{bgSrc=localStorage.getItem('bamiri.bgsrc')}catch(e){}
+let sel=null, sels=new Set(), multiMode=false, snap=true, zoom=1, past=[], future=[], last=JSON.stringify(doc);
+
+const autosave=()=>{ if(!LS.set('bamiri.current',doc)) toast('ブラウザの保存容量がいっぱいです'); };
+const layerOf=it=>doc.layers.find(l=>l.id===it.layer);
+const activeLayer=()=>doc.layers.find(l=>l.id===doc.active);
+function editable(it){const L=layerOf(it); return !!L&&L.vis&&!L.lock&&(!doc.solo||it.layer===doc.active);}
+function setBgSrc(s){bgSrc=s; try{localStorage.setItem('bamiri.bgsrc',s||'')}catch(e){toast('画像が大きすぎてブラウザに保存できません（表示はできます）');}}
+function commit(){const s=JSON.stringify(doc); if(s===last) return; past.push(last); if(past.length>100) past.shift(); last=s; future=[]; autosave(); updHist();}
+function restore(s){doc=JSON.parse(s); last=s; pruneSel(); autosave(); renderAll();}
+function undo(){if(!past.length) return; future.push(last); restore(past.pop()); updHist();}
+function redo(){if(!future.length) return; past.push(last); restore(future.pop()); updHist();}
+function updHist(){$('#undo').disabled=!past.length; $('#redo').disabled=!future.length;}
+const get=id=>doc.items.find(i=>i.id===id);
+const cond=()=>doc.items.find(i=>i.t==='conductor');
+
+/* ---------- drawing ---------- */
+const PAL_SCREEN={wrap:'#16191C',floor:'#24282D',edge:'#6B737C',grid:'rgba(255,255,255,.055)',grid5:'rgba(255,255,255,.13)',
+  text:'#D9DEE2',dim:'#8A939C',riserFill:'#383E45',riserStroke:'#7D8690',podium:'#4B525A',center:'#E3B23C'};
+const PAL_PRINT={wrap:'#FFFFFF',floor:'#FFFFFF',edge:'#222222',grid:'#F0F0F0',grid5:'#DCDCDC',
+  text:'#222222',dim:'#777777',riserFill:'#EDEDED',riserStroke:'#9A9A9A',podium:'#D6D6D6',center:'#C9962A'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const em=s=>[...String(s)].reduce((a,c)=>a+(c.charCodeAt(0)<256?.6:1),0);
+const fit=(s,w,max)=>{const e=em(s); return e?Math.min(max,(w-8)/e):max};
+const f1=n=>Math.round(n*10)/10;
+
+function shape(it,P){
+  const {w,h}=it, c=it.col||(SEC[it.sec]||SEC.etc).c, hw=w/2, hh=h/2, ink=it.col||P.text;
+  switch(it.t){
+    case 'player': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="9" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <rect x="${-hw+3}" y="${-hh+3}" width="${w-6}" height="7" rx="3" fill="rgba(0,0,0,.28)"/>${it.v==='nostand'?'':`
+      <line x1="0" y1="${hh}" x2="0" y2="${hh+7}" stroke="${STAND}" stroke-width="2"/>
+      <rect x="-27" y="${hh+7}" width="54" height="6" rx="2" fill="${STAND}" stroke="${K}"/>`}`;
+    case 'standing': return `<circle r="${hw}" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <path d="M -8 ${hh+3} L 8 ${hh+3} L 0 ${hh+12} Z" fill="${c}" stroke="${K}"/>`;
+    case 'conductor': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="4" fill="${P.podium}" stroke="${K}" stroke-width="1.5"/>
+      <rect x="-30" y="${-hh-16}" width="60" height="6" rx="2" fill="${STAND}" stroke="${K}"/>
+      <circle cy="6" r="19" fill="${c}" stroke="${K}" stroke-width="1.5"/>`;
+    case 'stand': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="2" fill="${STAND}" stroke="${K}"/>`;
+    case 'circle': {
+      let s=`<circle r="${hw}" fill="${c}" stroke="${K}" stroke-width="1.5"/>`;
+      if(it.v==='ring') s+=`<circle r="${Math.max(hw-6,2)}" fill="none" stroke="${K}" stroke-opacity=".45"/>`;
+      if(it.v==='flower'){s=''; for(let k=0;k<6;k++){const t=k*Math.PI/3; s+=`<circle cx="${f1(Math.cos(t)*hw*.5)}" cy="${f1(Math.sin(t)*hw*.5)}" r="${f1(hw*.45)}" fill="${c}" stroke="${K}"/>`;} s+=`<circle r="${f1(hw*.3)}" fill="#F2D98C" stroke="${K}"/>`;}
+      if(it.v==='cym') s+=`<circle r="${hw*.62}" fill="none" stroke="${K}" stroke-opacity=".4"/><circle r="${hw*.14}" fill="${K}" fill-opacity=".5"/>`;
+      return s;}
+    case 'bd': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="6" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <line x1="${-hw+7}" y1="${-hh+3}" x2="${-hw+7}" y2="${hh-3}" stroke="${K}" stroke-width="3"/>
+      <line x1="${hw-7}" y1="${-hh+3}" x2="${hw-7}" y2="${hh-3}" stroke="${K}" stroke-width="3"/>`;
+    case 'mallet': {
+      let s=`<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="4" fill="${c}" stroke="${K}" stroke-width="1.5"/>`;
+      if(it.v==='chime'){const n=Math.max(4,Math.round(w/16)); for(let i=0;i<n;i++){const x=-hw+10+i*(w-20)/(n-1); s+=`<circle cx="${f1(x)}" cy="${-hh+12}" r="4" fill="none" stroke="${K}" stroke-opacity=".5"/>`;}}
+      else {const n=Math.max(6,Math.min(44,Math.round(w/9))); for(let i=0;i<n;i++){const x=-hw+6+i*(w-12)/(n-1), yb=hh-6-(i/(n-1))*h*.35;
+        s+=`<line x1="${f1(x)}" y1="${-hh+6}" x2="${f1(x)}" y2="${f1(yb)}" stroke="${K}" stroke-opacity=".35" stroke-width="2"/>`;}}
+      return s;}
+    case 'drums': {
+      const sx=w/190, sy=h/160, C=(x,y,r,f)=>`<circle cx="${f1(x*sx)}" cy="${f1(y*sy)}" r="${f1(r*Math.min(sx,sy))}" fill="${f||'#E9EDF1'}" stroke="${K}"/>`;
+      return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="10" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-dasharray="6 5"/>
+        ${C(0,-60,15,P.podium)}<rect x="${f1(-22*sx)}" y="${f1(-15*sy)}" width="${f1(44*sx)}" height="${f1(62*sy)}" rx="5" fill="${c}" stroke="${K}"/>
+        ${C(-28,-28,17)}${C(-66,-38,18,'#F2D98C')}${C(-20,-2,13)}${C(20,-2,14)}${C(42,-38,22)}${C(-62,24,24,'#F2D98C')}${C(66,16,26,'#F2D98C')}`;}
+    case 'piano': {
+      const sx=w/150, sy=h/240;
+      return `<g transform="scale(${f1(sx*100)/100} ${f1(sy*100)/100})">
+        <path d="M -75 -120 H 75 V -30 C 75 30 40 40 25 80 C 15 110 0 120 -20 120 H -75 Z" fill="${c}" stroke="${K}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        <rect x="-72" y="-118" width="144" height="20" fill="#F4F4F2" stroke="${K}" vector-effect="non-scaling-stroke"/>
+        <rect x="-35" y="-150" width="70" height="22" rx="3" fill="${P.podium}" stroke="${K}" vector-effect="non-scaling-stroke"/></g>`;}
+    case 'keyboard': {
+      let s=`<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="3" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+        <rect x="${-hw+4}" y="${-hh+4}" width="${w-8}" height="${Math.max(h*.45,6)}" fill="#F4F4F2" stroke="${K}" stroke-opacity=".5"/>`;
+      for(let x=-hw+12;x<hw-6;x+=9) s+=`<line x1="${f1(x)}" y1="${-hh+4}" x2="${f1(x)}" y2="${f1(-hh+4+h*.28)}" stroke="${K}" stroke-width="3"/>`;
+      return s;}
+    case 'amp': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="3" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <rect x="${-hw+5}" y="${hh-Math.min(12,h*.4)}" width="${w-10}" height="${Math.min(8,h*.3)}" fill="rgba(0,0,0,.45)"/>`;
+    case 'wedge': return `<path d="M ${-hw} ${hh} L ${hw} ${hh} L ${f1(w*.32)} ${-hh} L ${f1(-w*.32)} ${-hh} Z" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <line x1="${f1(-w*.26)}" y1="${f1(-hh+6)}" x2="${f1(w*.26)}" y2="${f1(-hh+6)}" stroke="${K}" stroke-width="3" stroke-opacity=".5"/>`;
+    case 'mic': return `<circle r="${hw}" fill="${c}" stroke="${K}" stroke-width="1.5"/>
+      <line x1="${-hw*.6}" y1="0" x2="${hw*.6}" y2="0" stroke="${K}"/><line x1="0" y1="${-hw*.6}" x2="0" y2="${hw*.6}" stroke="${K}"/>`;
+    case 'riser': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${P.riserFill}" stroke="${P.riserStroke}" stroke-width="2"/>
+      <rect x="${-hw+6}" y="${-hh+6}" width="${Math.max(w-12,1)}" height="${Math.max(h-12,1)}" fill="none" stroke="${P.riserStroke}" stroke-opacity=".45" stroke-dasharray="4 4"/>
+      <text y="${hh-10}" font-size="11" text-anchor="middle" fill="${P.dim}" font-family="${FONT}">${esc(it.label)}</text>`;
+    case 'box': return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="4" fill="${c}" stroke="${K}" stroke-width="1.5"/>`;
+    case 'stairs': {let s=`<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${c}" stroke="${K}" stroke-width="1.5"/>`;
+      const n=Math.max(2,Math.round(h/25)); for(let k=1;k<n;k++){const y=-hh+h*k/n; s+=`<line x1="${-hw}" y1="${f1(y)}" x2="${hw}" y2="${f1(y)}" stroke="${K}" stroke-opacity=".5"/>`;}
+      return s;}
+    case 'arrow': {const sw=Math.max(3,h*.3), hl=Math.min(w*.4,Math.max(18,h*1.2));
+      return `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="transparent"/><line x1="${-hw}" y1="0" x2="${f1(hw-hl*.6)}" y2="0" stroke="${ink}" stroke-width="${f1(sw)}" stroke-linecap="round"/>
+        <path d="M ${hw} 0 L ${f1(hw-hl)} ${f1(-hh)} L ${f1(hw-hl)} ${f1(hh)} Z" fill="${ink}"/>`;}
+    case 'line': return `<rect x="${-hw}" y="${-Math.max(hh,8)}" width="${w}" height="${Math.max(h,16)}" fill="transparent"/><line x1="${-hw}" y1="0" x2="${hw}" y2="0" stroke="${ink}" stroke-width="${Math.max(2,h)}" ${it.v==='dash'?`stroke-dasharray="${h*3+6} ${h*2+6}"`:''}/>`;
+    default: return '';
+  }
+}
+function lum(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return 1; const n=parseInt(m[1],16), f=v=>{v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}; return .2126*f(n>>16)+.7152*f((n>>8)&255)+.0722*f(n&255);}
+const onInk=it=>it.col&&lum(it.col)<.28?'#FFFFFF':K;
+function textW(it){return Math.max(40,em(it.label)*it.h+10)}
+function bbox(it){return it.t==='text'?{w:textW(it),h:it.h+10}:{w:it.w,h:it.h}}
+
+function labelSvg(it,P,names){
+  let s='';
+  if(it.t==='text') return `<text font-size="${it.h}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${it.col||P.text}" font-family="${FONT}">${esc(it.label)}</text>`;
+  if(it.t!=='riser' && it.label){
+    const max=it.t==='player'||it.t==='standing'?15:it.t==='conductor'?13:18;
+    let fs=fit(it.label,Math.min(it.w,it.t==='drums'?120:it.w),max);
+    if(fs<10||it.t==='arrow'||it.t==='line'){const R=(it.t==='arrow'||it.t==='line')?Math.max(it.h/2,8)+4:Math.hypot(it.w,it.h)/2;
+      s+=`<text y="${f1(R+13)}" font-size="12" font-weight="700" text-anchor="middle" fill="${P.text}" font-family="${FONT}">${esc(it.label)}</text>`;}
+    else{const dy=it.t==='piano'?it.h*.12:0;
+      s+=`<text y="${f1(dy)}" font-size="${f1(fs)}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${onInk(it)}" font-family="${FONT}">${esc(it.label)}</text>`;}
+  }
+  if(names&&it.name){const y=it.t==='player'?it.h/2+27:Math.hypot(it.w,it.h)/2+14;
+    s+=`<text y="${f1(y)}" font-size="12" text-anchor="middle" fill="${P.text}" font-family="${FONT}">${esc(it.name)}</text>`;}
+  return s;
+}
+function orderItems(L){const its=doc.items.filter(i=>i.layer===L.id); return [...its.filter(i=>i.t==='riser'),...its.filter(i=>i.t!=='riser')]}
+const bgH=b=>b.w*b.ar;
+
+function stageSvg(P,{screen=false,names=true,counts=false,bg=true}={}){
+  const W=doc.W,D=doc.D, B=(bg&&doc.bg&&doc.bg.vis&&bgSrc)?doc.bg:null;
+  let s='';
+  const head=screen?0:(doc.title||counts?(counts?150:90):0);
+  let ax0=-90,ay0=-80,ax1=W+90,ay1=D+130;
+  if(B){ax0=Math.min(ax0,B.x-20); ay0=Math.min(ay0,B.y-20); ax1=Math.max(ax1,B.x+B.w+20); ay1=Math.max(ay1,B.y+bgH(B)+20);}
+  const x0=ax0,y0=ay0-head,vw=ax1-ax0,vh=ay1-ay0+head;
+  s+=`<rect x="${x0}" y="${y0}" width="${vw}" height="${vh}" fill="${P.wrap}"/>`;
+  s+=`<rect x="0" y="0" width="${W}" height="${D}" fill="${P.floor}"/>`;
+  if(B){const drag=screen&&!B.lock;
+    s+=`<image ${drag?'data-bg="1" style="cursor:move;touch-action:none"':'pointer-events="none"'} href="${bgSrc}" xlink:href="${bgSrc}" x="${B.x}" y="${B.y}" width="${B.w}" height="${f1(bgH(B))}" opacity="${B.op}" preserveAspectRatio="none"/>`;
+    if(drag) s+=`<rect x="${B.x}" y="${B.y}" width="${B.w}" height="${f1(bgH(B))}" fill="none" stroke="#E3B23C" stroke-width="2" stroke-dasharray="10 6" pointer-events="none"/>`;}
+  s+=`<g pointer-events="none">`;
+  for(let x=W/2%100;x<=W;x+=100){const k=Math.round((x-W/2)/100); s+=`<line x1="${f1(x)}" y1="0" x2="${f1(x)}" y2="${D}" stroke="${k%5===0?P.grid5:P.grid}"/>`;}
+  for(let k=1;k*100<D;k++){const y=D-k*100; s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${k%5===0?P.grid5:P.grid}"/>`;}
+  s+=`<line x1="${W/2}" y1="0" x2="${W/2}" y2="${D}" stroke="${P.center}" stroke-opacity=".55" stroke-dasharray="14 10"/>`;
+  s+=`<rect x="0" y="0" width="${W}" height="${D}" fill="none" stroke="${P.edge}" stroke-width="3"/>`;
+  const fs=`font-family="${FONT}"`;
+  for(let k=-Math.floor(W/200);k<=Math.floor(W/200);k++){const x=W/2+k*100;
+    s+=`<line x1="${x}" y1="${D}" x2="${x}" y2="${D+14}" stroke="${k===0?P.center:P.dim}" stroke-width="${k===0?3:1.5}"/>`;
+    s+=`<text x="${x}" y="${D+32}" font-size="13" text-anchor="middle" fill="${k===0?P.center:P.dim}" font-family="'IBM Plex Mono',monospace" font-weight="${k===0?700:400}">${Math.abs(k)}</text>`;}
+  s+=`<text x="10" y="-22" font-size="20" font-weight="700" fill="${P.dim}" ${fs}>下手</text>`;
+  s+=`<text x="${W-10}" y="-22" font-size="20" font-weight="700" text-anchor="end" fill="${P.dim}" ${fs}>上手</text>`;
+  s+=`<text x="${W/2}" y="${D+78}" font-size="22" font-weight="700" text-anchor="middle" letter-spacing="8" fill="${P.text}" ${fs}>客 席</text>`;
+  s+=`<path d="M ${W/2-120} ${D+70} l 14 8 l 14 -8 M ${W/2+92} ${D+70} l 14 8 l 14 -8" fill="none" stroke="${P.dim}" stroke-width="2"/>`;
+  s+=`<text x="${W}" y="${D+78}" font-size="13" text-anchor="end" fill="${P.dim}" font-family="'IBM Plex Mono',monospace">${(W/100).toFixed(1)} × ${(D/100).toFixed(1)} m</text>`;
+  s+=`<text x="0" y="${D+78}" font-size="13" fill="${P.dim}" ${fs}>目盛 = センターから m</text></g>`;
+
+  for(const L of doc.layers){ if(!L.vis) continue;
+    const dim=screen&&doc.solo&&L.id!==doc.active;
+    if(dim) s+=`<g opacity=".38">`;
+    for(const it of orderItems(L)){
+      const live=screen&&editable(it);
+      const hit=live?`<rect x="${-it.w/2-10}" y="${-it.h/2-10}" width="${it.w+20}" height="${it.h+20}" fill="transparent"/>`:'';
+      const b=bbox(it);
+      const hitT=live&&it.t==='text'?`<rect x="${-b.w/2}" y="${-b.h/2}" width="${b.w}" height="${b.h}" fill="transparent"/>`:'';
+      s+=`<g ${live?`class="it" data-id="${it.id}"`:(screen?'pointer-events="none"':'')} transform="translate(${it.x} ${it.y})"><g transform="rotate(${it.r||0})">${it.t==='text'?hitT:hit}${shape(it,P)}</g>${labelSvg(it,P,names)}</g>`;
+    }
+    if(dim) s+=`</g>`;
+  }
+  if(screen&&sels.size){
+    for(const id of sels){const it=get(id); if(!it) continue; const b=bbox(it);
+      s+=`<g transform="translate(${it.x} ${it.y}) rotate(${it.r||0})" pointer-events="none"><rect x="${-b.w/2-7}" y="${-b.h/2-7}" width="${b.w+14}" height="${b.h+14}" rx="6" fill="${sels.size>1?'rgba(227,178,60,.12)':'none'}" stroke="#E3B23C" stroke-width="2.5" stroke-dasharray="8 5"/></g>`;}
+    const it=sels.size===1&&get(sel);
+    if(it){const b=bbox(it), hy=-b.h/2-38;
+    s+=`<g transform="translate(${it.x} ${it.y}) rotate(${it.r||0})" pointer-events="none">
+      <line x1="0" y1="${-b.h/2-7}" x2="0" y2="${hy}" stroke="#E3B23C" stroke-width="2"/></g>
+      <g data-handle="1" transform="translate(${it.x} ${it.y}) rotate(${it.r||0}) translate(0 ${hy})"><circle r="26" fill="transparent"/><circle r="11" fill="#E3B23C" stroke="${K}" stroke-width="1.5"/>
+      <path d="M -5 -1 A 5 5 0 1 1 0 5" fill="none" stroke="${K}" stroke-width="1.6"/></g>`;}}
+  if(screen) s+=`<rect id="marq" x="0" y="0" width="0" height="0" fill="rgba(227,178,60,.15)" stroke="#E3B23C" stroke-width="2" stroke-dasharray="6 4" pointer-events="none" visibility="hidden"/>`;
+
+  if(!screen&&head){
+    s+=`<text x="0" y="${-80-head+56}" font-size="40" font-weight="700" fill="${P.text}" ${fs}>${esc(doc.title||'')}</text>`;
+    if(counts){const {list,total}=tally(); let line='',y=-80-head+100, lines=[];
+      const parts=[`計 ${total}名`,...list.map(([l,n])=>`${l} ${n}`)];
+      for(const p of parts){const t=line?line+'　'+p:p; if(em(t)*17>vw-200&&line){lines.push(line); line=p;} else line=t;}
+      if(line) lines.push(line);
+      lines.slice(0,2).forEach((ln,i)=>{s+=`<text x="0" y="${y+i*26}" font-size="17" fill="${P.dim}" ${fs}>${esc(ln)}</text>`;});}
+  }
+  return {s,vb:`${x0} ${y0} ${vw} ${vh}`,vw,vh};
+}
+function tally(){
+  const m=new Map(); let total=0;
+  for(const it of doc.items){ if(it.t==='player'||it.t==='standing'){ total++; const l=it.label||'?'; m.set(l,(m.get(l)||0)+1);} }
+  return {list:[...m.entries()],total};
+}
+
+/* ---------- render ---------- */
+const $=q=>document.querySelector(q), svg=$('#svg'), vp=$('#vp');
+let raf=0;
+function pruneSel(){for(const id of [...sels]){const it=get(id); if(!it||!editable(it)) sels.delete(id);} if(!sels.has(sel)) sel=sels.size?[...sels].pop():null;}
+function clearSel(){sel=null; sels.clear();}
+const selItems=()=>[...sels].map(get).filter(Boolean);
+function draw(){pruneSel(); const r=stageSvg(PAL_SCREEN,{screen:true,names:doc.showNames}); svg.setAttribute('viewBox',r.vb); svg.innerHTML=r.s; selBar();}
+function drawSoon(){if(raf) return; raf=requestAnimationFrame(()=>{raf=0; draw();});}
+function renderAll(){ $('#title').value=doc.title||''; draw(); renderSel(); renderStage(); }
+function setZoom(z){zoom=Math.max(.5,Math.min(5,z)); svg.style.width=(zoom*100)+'%'; $('#zv').textContent=Math.round(zoom*100)+'%';}
+
+function selBar(){
+  const it=sel&&get(sel); $('#selbar').hidden=!it;
+  if(it) $('#partBtn').hidden=!selItems().some(isPart);
+  if(it) $('#selTag').textContent=sels.size>1?`${sels.size}個を選択中`:(it.label||T[it.t].n)+(it.name?' / '+it.name:'');
+}
+function select(id,add=false){
+  if(add&&id){ if(sels.has(id)){sels.delete(id); sel=sels.size?[...sels].pop():null;} else {sels.add(id); sel=id;} }
+  else { sels=new Set(id?[id]:[]); sel=id; }
+  draw(); renderSel();
+}
+function selectMany(ids,add=false){ if(!add) sels=new Set(); ids.forEach(i=>sels.add(i)); sel=ids.length?ids[ids.length-1]:(sels.size?[...sels].pop():null); draw(); renderSel(); if(sels.size>1) toast(`${sels.size}個を選択しました`); }
+
+/* ---------- sheets: direction & part ---------- */
+const isPart=i=>i&&(i.t==='player'||i.t==='standing');
+let aimMode=false;
+function openSheet(html,bind){const b=$('#sheetBody'); b.innerHTML=html; $('#sheet').hidden=false; b.querySelector('[data-close]').onclick=closeSheet; bind(b); const f=b.querySelector('button:not([data-close])'); if(f) f.focus();}
+function closeSheet(){$('#sheet').hidden=true;}
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet') closeSheet();});
+function applyDir(fn,msg){const its=selItems(); if(!its.length) return; its.forEach(fn); commit(); draw(); renderSel(); closeSheet(); toast(msg.replace('N',its.length));}
+function openDir(){
+  const its=selItems(); if(!its.length) return; const base=get(sel);
+  const A=[['↖',135],['↑',180],['↗',-135],['←',90],null,['→',-90],['↙',45],['↓',0],['↘',-45]];
+  openSheet(`<div class="sheetHead"><strong>向きを整える（${its.length}個）</strong><button data-close>閉じる</button></div>
+    <p class="hint">矢印の方向に正面（譜面台の側）を向けます。↓が客席側です。</p>
+    <div class="dirgrid">${A.map(a=>a?`<button data-deg="${a[1]}" aria-label="${a[1]}度">${a[0]}</button>`:`<button class="mid" data-face>指揮者</button>`).join('')}</div>
+    <div class="row">
+      <button data-match ${its.length<2?'disabled':''}>「${esc(base.label||T[base.t].n)}」と同じ向きにそろえる</button>
+      <button data-aim>ステージ上の点に向ける</button>
+      <button data-center>センター前方に向ける</button>
+      <button data-flip>反対向きにする</button>
+      <button data-snap>15°単位に丸める</button>
+    </div>`,b=>{
+    b.querySelectorAll('[data-deg]').forEach(x=>x.onclick=()=>applyDir(i=>i.r=+x.dataset.deg,'N個の向きをそろえました'));
+    b.querySelector('[data-face]').onclick=()=>{const c=cond(); if(!c){toast('指揮台がありません'); return;} applyDir(i=>{if(i!==c) i.r=faceAngle(i.x,i.y,c.x,c.y);},'N個を指揮者へ向けました');};
+    b.querySelector('[data-match]').onclick=()=>{const r=base.r||0; applyDir(i=>i.r=r,'N個の向きをそろえました');};
+    b.querySelector('[data-center]').onclick=()=>applyDir(i=>i.r=faceAngle(i.x,i.y,doc.W/2,doc.D),'N個をセンター前方へ向けました');
+    b.querySelector('[data-flip]').onclick=()=>applyDir(i=>i.r=norm((i.r||0)+180),'N個を反対向きにしました');
+    b.querySelector('[data-snap]').onclick=()=>applyDir(i=>i.r=norm(Math.round((i.r||0)/15)*15),'N個の角度を丸めました');
+    b.querySelector('[data-aim]').onclick=()=>{closeSheet(); aimMode=true; svg.style.cursor='crosshair'; toast('向けたい場所をステージ上でタップしてください');};
+  });
+}
+function openPart(){
+  const its=selItems().filter(isPart); if(!its.length){toast('奏者を選んでください'); return;}
+  const groups=PAL.map(g=>({g:g.g,sec:g.sec,items:g.items.filter(x=>(x[0]==='player'||x[0]==='standing')&&x[1]&&x[1]!=='未定').map(x=>({l:x[1],sec:(x[2]&&x[2].sec)||secOf(x[1])||g.sec}))})).filter(g=>g.items.length);
+  const cus=CUSTOM.filter(c=>/^(player|standing)/.test(c.shape)).map(c=>({l:c.label,sec:c.sec,col:c.col}));
+  if(cus.length) groups.unshift({g:'カスタム',sec:'etc',items:cus});
+  const flat=[]; groups.forEach(g=>g.items.forEach(x=>flat.push(x)));
+  const cur=new Set(its.map(i=>i.label)).size===1?its[0].label:'';
+  openSheet(`<div class="sheetHead"><strong>パートを選ぶ（${its.length}人）</strong><button data-close>閉じる</button></div>
+    ${groups.map(g=>`<div class="grp"><h3><span class="dot" style="background:${SEC[g.sec].c}"></span>${esc(g.g)}</h3><div class="chips">${g.items.map(x=>{const k=flat.indexOf(x); return `<button data-pk="${k}" ${x.l===cur?'class="primary"':''}><span class="dot" style="background:${x.col||SEC[x.sec].c}"></span>${esc(x.l)}</button>`;}).join('')}</div></div>`).join('')}
+    <div class="grp"><h3>自由に入力</h3><div class="row"><input id="pkFree" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 8px" placeholder="例：Cl4、ソロ、Hp2" value="${esc(cur)}"><button id="pkOk" class="primary">決定</button></div></div>`,b=>{
+    const apply=(l,sec,col)=>{its.forEach(i=>{i.label=l; i.sec=sec||secOf(l)||i.sec; if(col) i.col=col; else delete i.col;}); commit(); draw(); renderSel(); renderStage(); closeSheet(); toast(`${its.length>1?its.length+'人を':''}「${l}」にしました`);};
+    b.querySelectorAll('[data-pk]').forEach(x=>x.onclick=()=>{const v=flat[x.dataset.pk]; apply(v.l,v.sec,v.col);});
+    const ok=()=>{const v=$('#pkFree').value.trim(); if(v) apply(v,secOf(v));};
+    $('#pkOk').onclick=ok; $('#pkFree').onkeydown=e=>{if(e.key==='Enter') ok();};
+  });
+}
+svg.addEventListener('dblclick',e=>{const g=e.target.closest('[data-id]'); if(g&&isPart(get(g.dataset.id))) openPart();});
+
+/* ---------- pointer ---------- */
+function pt(e){const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse());}
+let drag=null, justDragged=false;
+const additive=e=>multiMode||e.shiftKey||e.ctrlKey||e.metaKey;
+svg.addEventListener('pointerdown',e=>{
+  if(e.button>0) return;
+  if(aimMode){ const p=pt(e); const its=selItems(); its.forEach(i=>i.r=faceAngle(i.x,i.y,p.x,p.y)); aimMode=false; svg.style.cursor='';
+    commit(); draw(); renderSel(); toast(`${its.length}個をその点に向けました`); justDragged=true; setTimeout(()=>justDragged=false,0); e.preventDefault(); return; }
+  const h=e.target.closest('[data-handle]'), g=e.target.closest('[data-id]');
+  const bgEl=e.target.closest('[data-bg]');
+  const p=pt(e);
+  if(h&&sel){ drag={mode:'rot',id:sel,moved:false}; }
+  else if(g){ const id=g.dataset.id, add=additive(e), was=sels.has(id);
+    if(add){ if(!was) select(id,true); }
+    else if(!was) select(id);
+    else sel=id;
+    const group=selItems();
+    drag={mode:'move',id,add,was,sx:e.clientX,sy:e.clientY,px:p.x,py:p.y,moved:false,start:group.map(i=>[i,i.x,i.y])}; }
+  else if(bgEl&&doc.bg&&!multiMode){ drag={mode:'bg',dx:p.x-doc.bg.x,dy:p.y-doc.bg.y,sx:e.clientX,sy:e.clientY,moved:false}; }
+  else if(e.pointerType==='mouse'||multiMode){ drag={mode:'box',x0:p.x,y0:p.y,sx:e.clientX,sy:e.clientY,moved:false,add:additive(e)}; }
+  else return;
+  try{svg.setPointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();
+});
+svg.addEventListener('pointermove',e=>{
+  if(!drag) return; const p=pt(e);
+  if(!drag.moved&&drag.mode!=='rot'&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)<4) return;
+  if(drag.mode==='box'){ drag.moved=true; drag.x1=p.x; drag.y1=p.y; const m=$('#marq');
+    if(m){m.setAttribute('x',Math.min(drag.x0,p.x)); m.setAttribute('y',Math.min(drag.y0,p.y)); m.setAttribute('width',Math.abs(p.x-drag.x0)); m.setAttribute('height',Math.abs(p.y-drag.y0)); m.setAttribute('visibility','visible');}
+    return; }
+  if(drag.mode==='bg'){
+    drag.moved=true; let x=p.x-drag.dx, y=p.y-drag.dy; if(snap){x=Math.round(x/10)*10; y=Math.round(y/10)*10;}
+    doc.bg.x=Math.round(x); doc.bg.y=Math.round(y); drawSoon(); return;
+  }
+  const it=get(drag.id); if(!it) return;
+  if(drag.mode==='move'){
+    drag.moved=true;
+    const lead=drag.start.find(s=>s[0]===it)||[it,it.x,it.y];
+    let nx=lead[1]+(p.x-drag.px), ny=lead[2]+(p.y-drag.py);
+    if(snap){nx=Math.round(nx/10)*10; ny=Math.round(ny/10)*10;}
+    const dx=nx-lead[1], dy=ny-lead[2];
+    for(const [i,x,y] of drag.start){i.x=Math.round(x+dx); i.y=Math.round(y+dy);}
+  } else { drag.moved=true; let a=deg(Math.atan2(p.x-it.x,-(p.y-it.y))); a=snap?Math.round(a/15)*15:Math.round(a); it.r=norm(a); }
+  drawSoon();
+});
+const norm=a=>{a=((a%360)+360)%360; return a>180?a-360:a};
+function endDrag(){
+  const d=drag; drag=null; if(!d) return;
+  if(d.mode==='box'){ const m=$('#marq'); if(m) m.setAttribute('visibility','hidden');
+    if(d.moved){ const x0=Math.min(d.x0,d.x1),x1=Math.max(d.x0,d.x1),y0=Math.min(d.y0,d.y1),y1=Math.max(d.y0,d.y1);
+      const ids=doc.items.filter(i=>editable(i)&&i.x>=x0&&i.x<=x1&&i.y>=y0&&i.y<=y1).map(i=>i.id);
+      selectMany(ids,d.add); justDragged=true; setTimeout(()=>justDragged=false,0);}
+    return; }
+  if(d.moved){commit(); renderSel(); if(d.mode==='bg') renderLayers(); justDragged=true; setTimeout(()=>justDragged=false,0); return;}
+  if(d.mode==='move'){ if(d.add&&d.was) select(d.id,true); else if(!d.add&&sels.size>1) select(d.id); }
+}
+svg.addEventListener('pointerup',endDrag); svg.addEventListener('pointercancel',endDrag);
+svg.addEventListener('click',e=>{ if(justDragged) return; if(!e.target.closest('[data-id],[data-handle]')&&sels.size) select(null); });
+svg.addEventListener('touchstart',e=>{ if(multiMode||(e.target.closest&&e.target.closest('[data-id],[data-handle],[data-bg]'))) e.preventDefault(); },{passive:false});
+
+/* ---------- actions ---------- */
+function addItem(t,label,ex={}){
+  const L=activeLayer();
+  if(!L.vis||L.lock){toast(`「${L.name}」は${L.lock?'ロック中':'非表示'}です。解除するか別のレイヤーを選んでください`); return;}
+  const it=mk(t,label,doc.W/2,doc.D/2,ex); it.layer=L.id;
+  const s=sel&&get(sel);
+  if(s&&s.t===it.t&&(t==='player'||t==='standing')){const a=rad(s.r||0), step=s.w+30; it.x=Math.round(s.x+Math.cos(a)*step); it.y=Math.round(s.y+Math.sin(a)*step); it.r=s.r;}
+  else { const c=cond(); if(c&&(t==='player')) it.r=faceAngle(it.x,it.y,c.x,c.y); }
+  doc.items.push(it); commit(); select(it.id);
+  toast(`${label||T[t].n} を「${L.name}」に追加`); renderLayers();
+}
+function center(its){const xs=its.map(i=>i.x), ys=its.map(i=>i.y); return [(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2];}
+function act(a){
+  const its=selItems(); if(!its.length) return;
+  const many=its.length>1;
+  if(a==='rotL'||a==='rotR'){const d=a==='rotL'?-15:15;
+    if(many){const [cx,cy]=center(its), t=rad(d), c=Math.cos(t), sn=Math.sin(t);
+      its.forEach(i=>{const x=i.x-cx,y=i.y-cy; i.x=Math.round(cx+x*c-y*sn); i.y=Math.round(cy+x*sn+y*c); i.r=norm((i.r||0)+d);});}
+    else its[0].r=norm((its[0].r||0)+d);}
+  else if(a==='face'){const c=cond(); if(!c){toast('指揮台がありません'); return;} its.forEach(i=>{if(i!==c) i.r=faceAngle(i.x,i.y,c.x,c.y);});}
+  else if(a==='dup'){const ns=its.map(i=>Object.assign(clone(i),{id:uid(),x:i.x+30,y:i.y+30})); doc.items.push(...ns); commit(); selectMany(ns.map(n=>n.id)); renderStage(); return;}
+  else if(a==='del'){const set=new Set(its); doc.items=doc.items.filter(i=>!set.has(i)); clearSel(); commit(); draw(); renderSel(); renderStage(); toast(`${its.length>1?its.length+'個を':''}削除しました（戻す で復元）`); return;}
+  else if(a==='front'){const set=new Set(its); doc.items=[...doc.items.filter(i=>!set.has(i)),...its];}
+  else if(a==='back'){const set=new Set(its); doc.items=[...its,...doc.items.filter(i=>!set.has(i))];}
+  else if(a==='alignH'){const y=Math.round(its.reduce((s,i)=>s+i.y,0)/its.length); its.forEach(i=>i.y=y);}
+  else if(a==='alignV'){const x=Math.round(its.reduce((s,i)=>s+i.x,0)/its.length); its.forEach(i=>i.x=x);}
+  else if(a==='distH'){const o=[...its].sort((p,q)=>p.x-q.x), x0=o[0].x, x1=o[o.length-1].x; o.forEach((i,k)=>i.x=Math.round(x0+(x1-x0)*k/(o.length-1)));}
+  else if(a==='arc'){const c=cond(); if(!c){toast('指揮台がありません'); return;}
+    const o=its.filter(i=>i!==c).map(i=>({i,a:Math.atan2(i.x-c.x,-(i.y-c.y)),r:Math.hypot(i.x-c.x,i.y-c.y)})).sort((p,q)=>p.a-q.a);
+    if(o.length<2) return; const R=o.reduce((s,v)=>s+v.r,0)/o.length, a0=o[0].a, a1=o[o.length-1].a;
+    o.forEach((v,k)=>{const t=a0+(a1-a0)*k/(o.length-1); v.i.x=Math.round(c.x+R*Math.sin(t)); v.i.y=Math.round(c.y-R*Math.cos(t)); v.i.r=faceAngle(v.i.x,v.i.y,c.x,c.y);});}
+  else if(a==='same'){const l=its[0].label; selectMany(doc.items.filter(i=>editable(i)&&i.label===l).map(i=>i.id)); return;}
+  else if(a==='all'){selectMany(doc.items.filter(i=>i.layer===doc.active&&editable(i)).map(i=>i.id)); return;}
+  else if(a==='none'){select(null); return;}
+  else if(a==='edit'){tab('sel'); return;}
+  else if(a==='dir'){openDir(); return;}
+  else if(a==='part'){openPart(); return;}
+  commit(); draw(); renderSel(); renderStage();
+}
+$('#selbar').addEventListener('click',e=>{const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act);});
+
+/* ---------- panels ---------- */
+function tab(name){
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
+  ['add','sel','layer','stage','save'].forEach(n=>$('#pane-'+n).hidden=n!==name);
+  if(name==='save') renderSaves();
+  if(matchMedia('(max-width:820px)').matches) $('aside').scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]'); if(b) tab(b.dataset.tab);});
+
+const SHAPES=[['player','奏者（椅子＋譜面台）'],['player:nostand','椅子のみ'],['standing','奏者（立ち）'],['circle','丸'],['circle:ring','丸（二重線）'],
+  ['box','四角'],['mallet','鍵盤打楽器'],['keyboard','キーボード'],['amp','アンプ・スピーカー'],['bd','太鼓（横置き）'],['riser','台']];
+let CUSTOM=LS.get('bamiri.custom')||[], cForm=null, cEdit=false;
+const saveCustom=()=>{if(!LS.set('bamiri.custom',CUSTOM)) toast('保存できませんでした');};
+function customEx(c){const [t,v]=c.shape.split(':'); const ex={w:c.w,h:c.h,sec:c.sec}; if(v) ex.v=v; if(c.col) ex.col=c.col; return [t,c.label,ex];}
+function renderAdd(){
+  const f=cForm;
+  const form=f?`<div class="grp" style="border:1px solid var(--accent);border-radius:8px;padding:10px"><h3>${f.id?'カスタム楽器を編集':'カスタム楽器を作る'}</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="field"><label for="cLabel">表示名</label><input id="cLabel" value="${esc(f.label)}" placeholder="例：Eup2、和太鼓、ハープ"></div>
+    <div class="field"><label for="cShape">形</label><select id="cShape">${SHAPES.map(([k,n])=>`<option value="${k}" ${k===f.shape?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field"><label>サイズ（cm）</label><div class="pair"><input id="cW" class="num" type="number" min="5" step="5" value="${f.w}" aria-label="幅"><input id="cH" class="num" type="number" min="5" step="5" value="${f.h}" aria-label="奥行"></div></div>
+    <div class="field"><label for="cSec">区分</label><select id="cSec">${Object.entries(SEC).map(([k,v])=>`<option value="${k}" ${k===f.sec?'selected':''}>${v.n}</option>`).join('')}</select></div>
+    <div class="field"><label for="cCol">色</label><div class="row" style="align-items:center;flex-wrap:nowrap"><input id="cCol" type="color" value="${f.col||SEC[f.sec].c}" style="width:48px;height:32px;padding:2px;flex:none"><label class="check" style="white-space:nowrap"><input type="checkbox" id="cUseCol" ${f.col?'checked':''}> 色を指定する</label></div></div>
+    <div class="row"><button id="cSave" class="primary">${f.id?'更新':'登録'}</button><button id="cCancel">キャンセル</button>${f.id?'<button id="cDel" class="danger">削除</button>':''}</div>
+    </div></div>`:'';
+  const cus=`<div class="grp"><h3><span class="dot" style="background:var(--accent)"></span>カスタム楽器</h3>
+    <div class="chips">${CUSTOM.map((c,i)=>`<button data-c="${i}" ${cEdit?'style="border-style:dashed"':''}><span class="dot" style="background:${c.col||SEC[c.sec].c}"></span>${esc(c.label)}${cEdit?' ✎':''}</button>`).join('')}
+      <button id="cNew">＋ 作る</button>${CUSTOM.length?`<button id="cEditT" aria-pressed="${cEdit}">${cEdit?'編集を終える':'編集'}</button>`:''}</div>
+    ${CUSTOM.length?'':'<p class="hint" style="margin-top:6px">名前・形・大きさ・色を決めて、自分だけの楽器や備品を登録できます。登録したものはこの端末のどの配置図でも使えます。</p>'}
+    ${cEdit?'<p class="hint" style="margin-top:6px">編集するものをタップしてください。</p>':''}</div>`;
+  $('#pane-add').innerHTML=`<div class="target" id="addTarget"></div>`+form+cus+PAL.map((g,gi)=>`<div class="grp"><h3><span class="dot" style="background:${SEC[g.sec].c}"></span>${g.g}</h3>
+    <div class="chips">${g.items.map((x,i)=>`<button data-g="${gi}" data-i="${i}">${esc(x[1]==='未定'?T[x[0]].n:(x[1]||T[x[0]].n))}</button>`).join('')}</div></div>`).join('')+
+    `<p class="hint">奏者を選んだ状態で同じ種類を追加すると、横に並んで置かれます。ドラッグで移動、黄色い丸で回転。Shift／Ctrl＋クリックや範囲ドラッグで複数選択（スマホは「複数選択」ボタン）。PCは矢印キーで微調整、Ctrl+Aで全選択。</p>`;
+  syncLayerUI();
+  if(f){
+    const up=()=>{f.label=$('#cLabel').value; f.w=parseFloat($('#cW').value)||f.w; f.h=parseFloat($('#cH').value)||f.h; f.sec=$('#cSec').value; f.col=$('#cUseCol').checked?$('#cCol').value:'';};
+    $('#cShape').onchange=e=>{up(); const [t,v]=e.target.value.split(':'); const d=T[t]; f.shape=e.target.value; f.w=d.w; f.h=d.h; if(t==='player'||t==='standing'||t==='riser'||t==='amp') f.sec=d.sec; renderAdd();};
+    $('#cCol').oninput=()=>{$('#cUseCol').checked=true;};
+    $('#cSave').onclick=()=>{up(); if(!f.label.trim()){toast('表示名を入れてください'); $('#cLabel').focus(); return;}
+      const rec={id:f.id||uid(),label:f.label.trim(),shape:f.shape,w:Math.max(5,Math.round(f.w)),h:Math.max(5,Math.round(f.h)),sec:f.sec,col:f.col};
+      const i=CUSTOM.findIndex(c=>c.id===rec.id); if(i>=0) CUSTOM[i]=rec; else CUSTOM.push(rec);
+      saveCustom(); cForm=null; renderAdd(); toast(`「${rec.label}」を${i>=0?'更新':'登録'}しました`);};
+    $('#cCancel').onclick=()=>{cForm=null; renderAdd();};
+    if($('#cDel')) $('#cDel').onclick=e=>{const b=e.currentTarget; if(!b.dataset.armed){b.dataset.armed=1; b.textContent='本当に削除'; return;}
+      CUSTOM=CUSTOM.filter(c=>c.id!==f.id); saveCustom(); cForm=null; if(!CUSTOM.length) cEdit=false; renderAdd(); toast('削除しました');};
+  }
+}
+$('#pane-add').addEventListener('click',e=>{
+  if(e.target.closest('#goLayer')){tab('layer'); return;}
+  if(e.target.closest('#cNew')){cEdit=false; cForm={id:null,label:'',shape:'player',w:46,h:46,sec:'etc',col:''}; renderAdd(); $('#cLabel').focus(); return;}
+  if(e.target.closest('#cEditT')){cEdit=!cEdit; renderAdd(); return;}
+  const cb=e.target.closest('[data-c]');
+  if(cb){const c=CUSTOM[cb.dataset.c]; if(!c) return;
+    if(cEdit){cForm=Object.assign({},c); renderAdd(); return;}
+    const [t,l,ex]=customEx(c); addItem(t,l,ex); return;}
+  const b=e.target.closest('[data-g]'); if(!b) return; const x=PAL[b.dataset.g].items[b.dataset.i]; addItem(x[0],x[1],x[2]?clone(x[2]):{});});
+
+function renderSel(){
+  const it=sel&&get(sel), p=$('#pane-sel');
+  if(!it){p.innerHTML=`<p class="hint">ステージ上のものをタップすると、ここでパート名・奏者名・色・角度・サイズを編集できます。</p>
+    <p class="hint">複数選択：Shift／Ctrlを押しながらクリック、何もないところをドラッグして範囲選択。スマホは上の「複数選択」をオンにしてタップ／なぞって範囲選択。</p>
+    <div class="row"><button data-a="all">作業中レイヤーを全選択</button></div>`;
+    p.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.a))); return;}
+  if(sels.size>1) return renderMulti(p);
+  const secOpts=Object.entries(SEC).map(([k,v])=>`<option value="${k}" ${k===it.sec?'selected':''}>${v.n}</option>`).join('');
+  const isText=it.t==='text';
+  p.innerHTML=`<div class="grp"><h3>${esc(T[it.t].n)}</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="field"><label for="fLabel">${isText?'文字':'パート名'}</label><input id="fLabel" value="${esc(it.label)}"></div>
+    ${isText||it.t==='riser'?'':`<div class="field"><label for="fName">奏者名</label><input id="fName" value="${esc(it.name)}" placeholder="例：山田"></div><p class="hint" style="margin:-2px 0 0 96px">名前入りの画像は公開の場に載せないでください。</p>`}
+    ${isText||it.t==='riser'?'':`<div class="field"><label for="fSec">色（区分）</label><select id="fSec">${secOpts}</select></div>`}
+    ${it.t==='riser'?'':`<div class="field"><label for="fCol">色を指定</label><div class="row" style="align-items:center;flex-wrap:nowrap"><input id="fCol" type="color" value="${it.col||(it.t==='text'||it.t==='arrow'||it.t==='line'?'#D9DEE2':(SEC[it.sec]||SEC.etc).c)}" style="width:48px;height:32px;padding:2px;flex:none"><button id="fColReset" ${it.col?'':'disabled'}>区分の色に戻す</button></div></div>`}
+    <div class="field"><label for="fLayer">レイヤー</label><select id="fLayer">${[...doc.layers].reverse().map(l=>`<option value="${l.id}" ${l.id===it.layer?'selected':''}>${esc(l.name)}${l.lock?'（ロック中）':''}</option>`).join('')}</select></div>
+    <div class="field"><label for="fR">角度（°）</label><input id="fR" class="num" type="number" step="5" value="${it.r||0}"></div>
+    ${RESIZABLE.has(it.t)?`<div class="field"><label>サイズ（cm）</label><div class="pair"><input id="fW" class="num" type="number" min="5" step="5" value="${it.w}" aria-label="幅"><input id="fH" class="num" type="number" min="5" step="5" value="${it.h}" aria-label="奥行"></div></div>`:''}
+    ${isText?`<div class="field"><label for="fH">文字サイズ</label><input id="fH" class="num" type="number" min="10" step="2" value="${it.h}"></div>`:''}
+    <div class="field"><label>位置（m）</label><span class="num" style="font-size:12px;color:var(--muted)">センターから ${f1((it.x-doc.W/2)/100)} ／ 前端から ${f1((doc.D-it.y)/100)}</span></div>
+    </div></div>
+    <div class="row">${isPart(it)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="face">指揮者へ向ける</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">削除</button></div>
+    <div class="row"><button data-a="same">同じパートをすべて選択</button><button data-a="all">作業中レイヤーを全選択</button></div>
+    <div class="row"><button id="toCustom">この形を「カスタム楽器」に登録</button></div>`;
+  const bind=(id,fn)=>{const el=$(id); if(!el) return; el.addEventListener('input',()=>{fn(el.value); drawSoon();}); el.addEventListener('change',()=>{commit(); renderStage();});};
+  bind('#fLabel',v=>{it.label=v; if(it.t==='player'||it.t==='standing'){const s=secOf(v); if(s){it.sec=s; const fs=$('#fSec'); if(fs) fs.value=s;}}});
+  bind('#fName',v=>it.name=v);
+  bind('#fSec',v=>it.sec=v);
+  bind('#fCol',v=>{it.col=v; const r=$('#fColReset'); if(r) r.disabled=false;});
+  if($('#fColReset')) $('#fColReset').onclick=()=>{delete it.col; commit(); draw(); renderSel();};
+  $('#toCustom').onclick=()=>{cForm={id:null,label:it.label||T[it.t].n,shape:it.t+(it.v?':'+it.v:''),w:it.w,h:it.h,sec:it.sec,col:it.col||''}; tab('add'); renderAdd(); const f=$('#cLabel'); if(f){f.focus(); f.select();}};
+  bind('#fR',v=>{const n=parseFloat(v); if(!isNaN(n)) it.r=norm(n);});
+  bind('#fW',v=>{const n=parseFloat(v); if(n>=5) it.w=Math.round(n);});
+  bind('#fH',v=>{const n=parseFloat(v); if(n>=5) it.h=Math.round(n);});
+  p.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.a)));
+  $('#fLayer').addEventListener('change',e=>{const L=doc.layers.find(l=>l.id===e.target.value); it.layer=L.id;
+    if(doc.solo&&!L.lock&&L.vis) doc.active=L.id;
+    commit(); renderAll(); toast(`「${L.name}」に移動しました`);});
+}
+function renderMulti(p){
+  const its=selItems(), uniq=f=>{const v=new Set(its.map(f)); return v.size===1?[...v][0]:null;};
+  const lab=uniq(i=>i.label), sc=uniq(i=>i.sec), ly=uniq(i=>i.layer), rr=uniq(i=>i.r||0);
+  const cnt=new Map(); its.forEach(i=>{const l=i.label||T[i.t].n; cnt.set(l,(cnt.get(l)||0)+1);});
+  p.innerHTML=`<div class="grp"><h3>${its.length}個を選択中</h3>
+    <div class="counts">${[...cnt].map(([l,n])=>`<span>${esc(l)}<b>${n}</b></span>`).join('')}</div></div>
+    <div class="grp"><h3>まとめて変更</h3><div style="display:flex;flex-direction:column;gap:8px">
+    <div class="field"><label for="mLabel">パート名</label><input id="mLabel" value="${esc(lab??'')}" placeholder="（ばらばら）"></div>
+    <div class="field"><label for="mSec">色（区分）</label><select id="mSec">${sc?'':'<option value="">（ばらばら）</option>'}${Object.entries(SEC).map(([k,v])=>`<option value="${k}" ${k===sc?'selected':''}>${v.n}</option>`).join('')}</select></div>
+    <div class="field"><label for="mCol">色を指定</label><div class="row" style="align-items:center;flex-wrap:nowrap"><input id="mCol" type="color" value="${uniq(i=>i.col)||'#86BDEB'}" style="width:48px;height:32px;padding:2px;flex:none"><button id="mColReset">区分の色に戻す</button></div></div>
+    <div class="field"><label for="mLayer">レイヤー</label><select id="mLayer">${ly?'':'<option value="">（ばらばら）</option>'}${[...doc.layers].reverse().map(l=>`<option value="${l.id}" ${l.id===ly?'selected':''}>${esc(l.name)}${l.lock?'（ロック中）':''}</option>`).join('')}</select></div>
+    <div class="field"><label for="mR">角度（°）</label><input id="mR" class="num" type="number" step="5" value="${rr??''}" placeholder="（ばらばら）"></div>
+    </div></div>
+    <div class="grp"><h3>並べる</h3><div class="row">
+      <button data-a="arc">指揮者を中心に弧に並べる</button><button data-a="alignH">横一列にそろえる</button><button data-a="alignV">縦にそろえる</button><button data-a="distH">左右を等間隔に</button></div></div>
+    <div class="grp"><h3>操作</h3><div class="row">
+      ${its.some(isPart)?'<button data-a="part" class="primary">パートを選ぶ</button>':''}<button data-a="dir">向きを整える</button><button data-a="rotL">⟲ 15°</button><button data-a="rotR">⟳ 15°</button><button data-a="face">指揮者へ向ける</button><button data-a="dup">複製</button><button data-a="front">前面へ</button><button data-a="back">背面へ</button><button data-a="del" class="danger">${its.length}個を削除</button><button data-a="none">選択解除</button></div></div>`;
+  p.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.a)));
+  const ch=(id,fn)=>{const el=$(id); el.addEventListener('change',()=>{if(el.value==='') return; fn(el.value); commit(); draw(); renderSel(); renderStage();});};
+  ch('#mLabel',v=>its.forEach(i=>{i.label=v; if(i.t==='player'||i.t==='standing'){const s=secOf(v); if(s) i.sec=s;}}));
+  ch('#mSec',v=>its.forEach(i=>i.sec=v));
+  ch('#mCol',v=>its.forEach(i=>{if(i.t!=='riser') i.col=v;}));
+  $('#mColReset').onclick=()=>{its.forEach(i=>delete i.col); commit(); draw(); renderSel();};
+  ch('#mR',v=>{const n=parseFloat(v); if(!isNaN(n)) its.forEach(i=>i.r=norm(n));});
+  ch('#mLayer',v=>{const L=doc.layers.find(l=>l.id===v); its.forEach(i=>i.layer=v); if(doc.solo&&!L.lock&&L.vis) doc.active=v; toast(`${its.length}個を「${L.name}」に移動しました`);});
+}
+
+/* ---------- layers panel ---------- */
+const IC={
+  eye:'<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff:'<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  unlock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
+  up:'<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  del:'<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+};
+function renderLayers(){
+  const p=$('#pane-layer'); if(!p) return;
+  const cnt=id=>doc.items.filter(i=>i.layer===id).length;
+  const B=doc.bg;
+  p.innerHTML=`<div class="grp"><h3>レイヤー（上にあるほど手前）</h3>
+    <div class="layers">${[...doc.layers].reverse().map(l=>{const idx=doc.layers.indexOf(l), on=l.id===doc.active;
+      return `<div class="lyr ${on?'on':''} ${l.vis?'':'off'}" data-lid="${l.id}">
+        <span class="radio" aria-hidden="true"></span>
+        <div style="min-width:0"><input class="nm" value="${esc(l.name)}" aria-label="レイヤー名" data-nm="${l.id}">
+          <div class="meta">${cnt(l.id)}個${on?' ・ <span class="badge">作業中</span>':''}${l.lock?' ・ ロック中':''}</div></div>
+        <div class="btns">
+          <button class="ib" data-vis="${l.id}" aria-pressed="${!l.vis}" title="${l.vis?'非表示にする':'表示する'}" aria-label="表示切替">${l.vis?IC.eye:IC.eyeOff}</button>
+          <button class="ib warn" data-lock="${l.id}" aria-pressed="${l.lock}" title="${l.lock?'ロック解除':'ロック'}" aria-label="ロック切替">${l.lock?IC.lock:IC.unlock}</button>
+          <button class="ib" data-up="${l.id}" ${idx===doc.layers.length-1?'disabled':''} aria-label="上へ">${IC.up}</button>
+          <button class="ib" data-down="${l.id}" ${idx===0?'disabled':''} aria-label="下へ">${IC.down}</button>
+          <button class="ib" data-ldel="${l.id}" ${doc.layers.length<2?'disabled':''} aria-label="レイヤー削除">${IC.del}</button>
+        </div></div>`;}).join('')}</div>
+    <div class="row" style="margin-top:8px"><button id="addLayer" class="primary">＋ レイヤーを追加</button></div>
+    <label class="check" style="margin-top:10px"><input type="checkbox" id="solo" ${doc.solo?'checked':''}> 作業中のレイヤーだけ触れる（他は薄く表示）</label>
+    <p class="hint" style="margin-top:6px">追加したものは作業中のレイヤーに入ります。ロックしたレイヤーは動かせず、選択もできません。</p></div>
+
+    <div class="grp"><h3>背景（舞台図の画像）</h3>
+    ${B&&bgSrc?`<div style="display:flex;flex-direction:column;gap:8px">
+      <img class="bgThumb" src="${bgSrc}" alt="背景画像">
+      <div class="row"><button class="ib" id="bgVis" aria-pressed="${!B.vis}" aria-label="表示切替">${B.vis?IC.eye:IC.eyeOff}</button>
+        <button class="ib warn" id="bgLock" aria-pressed="${B.lock}" aria-label="ロック切替">${B.lock?IC.lock:IC.unlock}</button>
+        <span class="hint" style="align-self:center">${B.lock?'ロック中':'ステージ上でドラッグして位置合わせ'}</span></div>
+      <div class="field"><label for="bgOp">濃さ</label><input id="bgOp" type="range" min="0.1" max="1" step="0.05" value="${B.op}"></div>
+      <div class="field"><label for="bgW">画像の幅 m</label><input id="bgW" class="num" type="number" min="1" step="0.1" value="${f1(B.w/100)}"></div>
+      <div class="pair"><div class="field" style="grid-template-columns:auto 1fr"><label for="bgX">左 m</label><input id="bgX" class="num" type="number" step="0.1" value="${f1(B.x/100)}"></div>
+        <div class="field" style="grid-template-columns:auto 1fr"><label for="bgY">上 m</label><input id="bgY" class="num" type="number" step="0.1" value="${f1(B.y/100)}"></div></div>
+      <div class="row"><button id="bgFit">間口に合わせる</button><button id="bgPick">画像を変更</button><button id="bgDel" class="danger">背景を外す</button></div>
+      <p class="hint">図面の縮尺に合わせるには、図面上の間口がステージの間口（${doc.W/100}m）と重なるように「画像の幅」を調整してください。</p>
+    </div>`:`<div class="row"><button id="bgPick" class="primary">画像を読み込む</button></div>
+      <p class="hint" style="margin-top:6px">ホールの舞台平面図などの写真・スクショ（JPG / PNG）を下敷きにできます。PDFは画像に変換してから読み込んでください。</p>`}
+    <input type="file" id="bgFile" accept="image/*" hidden></div>`;
+
+  const find=id=>doc.layers.find(l=>l.id===id);
+  p.querySelectorAll('.lyr').forEach(r=>r.addEventListener('click',e=>{ if(e.target.closest('button,input')) return; setActive(r.dataset.lid);}));
+  p.querySelectorAll('[data-nm]').forEach(inp=>{
+    inp.addEventListener('focus',()=>{ if(doc.active!==inp.dataset.nm){doc.active=inp.dataset.nm; draw(); syncLayerUI(false);} });
+    inp.addEventListener('input',()=>{find(inp.dataset.nm).name=inp.value; syncLayerUI(false);});
+    inp.addEventListener('change',()=>{commit(); renderSel();});});
+  p.querySelectorAll('[data-vis]').forEach(b=>b.onclick=()=>{const l=find(b.dataset.vis); l.vis=!l.vis; commit(); renderAll();});
+  p.querySelectorAll('[data-lock]').forEach(b=>b.onclick=()=>{const l=find(b.dataset.lock); l.lock=!l.lock; commit(); renderAll(); toast(l.lock?`「${l.name}」をロックしました`:`「${l.name}」のロックを解除しました`);});
+  const mv=(id,d)=>{const i=doc.layers.findIndex(l=>l.id===id), j=i+d; if(j<0||j>=doc.layers.length) return; const a=doc.layers; [a[i],a[j]]=[a[j],a[i]]; commit(); renderAll();};
+  p.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>mv(b.dataset.up,1));
+  p.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>mv(b.dataset.down,-1));
+  p.querySelectorAll('[data-ldel]').forEach(b=>b.onclick=()=>{
+    const l=find(b.dataset.ldel), n=cnt(l.id);
+    if(n&&!b.dataset.armed){b.dataset.armed=1; b.classList.add('danger'); b.title=`もう一度押すと ${n}個ごと削除`; toast(`もう一度押すと「${l.name}」を中身${n}個ごと削除します`); setTimeout(()=>{if(b.isConnected){delete b.dataset.armed; b.classList.remove('danger');}},3000); return;}
+    doc.items=doc.items.filter(i=>i.layer!==l.id); doc.layers=doc.layers.filter(x=>x!==l);
+    if(doc.active===l.id) doc.active=doc.layers[doc.layers.length-1].id; commit(); renderAll(); toast(`「${l.name}」を削除しました（戻す で復元）`);});
+  $('#addLayer').onclick=()=>{const L={id:uid(),name:'レイヤー'+(doc.layers.length+1),vis:true,lock:false};
+    const i=doc.layers.findIndex(l=>l.id===doc.active); doc.layers.splice(i+1,0,L); doc.active=L.id; commit(); renderAll();
+    const inp=p.querySelector(`[data-nm="${L.id}"]`); if(inp){inp.focus(); inp.select();}};
+  $('#solo').onchange=e=>{doc.solo=e.target.checked; commit(); draw();};
+
+  $('#bgPick').onclick=()=>$('#bgFile').click();
+  $('#bgFile').onchange=e=>{const f=e.target.files[0]; if(f) loadBg(f);};
+  if(B&&bgSrc){
+    $('#bgVis').onclick=()=>{B.vis=!B.vis; commit(); draw(); renderLayers();};
+    $('#bgLock').onclick=()=>{B.lock=!B.lock; commit(); draw(); renderLayers();};
+    $('#bgOp').oninput=e=>{B.op=parseFloat(e.target.value); drawSoon();}; $('#bgOp').onchange=commit;
+    const num=(id,fn)=>{$(id).onchange=e=>{const n=parseFloat(e.target.value); if(!isNaN(n)){fn(n); commit(); draw();}};};
+    num('#bgW',n=>{if(n>0) B.w=Math.round(n*100);}); num('#bgX',n=>B.x=Math.round(n*100)); num('#bgY',n=>B.y=Math.round(n*100));
+    $('#bgFit').onclick=()=>{B.w=doc.W; B.x=0; B.y=Math.round((doc.D-bgH(B))/2); commit(); draw(); renderLayers();};
+    $('#bgDel').onclick=()=>{doc.bg=null; commit(); draw(); renderLayers(); toast('背景を外しました（戻す で復元）');};
+  }
+  syncLayerUI(true);
+}
+function setActive(id){doc.active=id; commit(); draw(); renderLayers(); renderSel();}
+function syncLayerUI(){
+  const L=activeLayer(), s=$('#layerSel');
+  s.innerHTML=[...doc.layers].reverse().map(l=>`<option value="${l.id}" ${l.id===doc.active?'selected':''}>${esc(l.name)}${l.lock?'（ロック中）':''}</option>`).join('');
+  const t=$('#addTarget'); if(t) t.innerHTML=`<span style="color:var(--muted)">追加先</span><b>${esc(L.name)}</b>${L.lock?'<span class="badge" style="background:var(--danger);color:#fff">ロック中</span>':''}<button id="goLayer">レイヤー</button>`;
+}
+$('#layerSel').addEventListener('change',e=>setActive(e.target.value));
+function loadBg(f){
+  const rd=new FileReader();
+  rd.onload=()=>{const im=new Image(); im.onload=()=>{
+      const M=2000, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas');
+      c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
+      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height);
+      setBgSrc(c.toDataURL('image/jpeg',.82));
+      const ar=c.height/c.width, w=doc.W;
+      doc.bg={x:0,y:Math.round((doc.D-w*ar)/2),w,ar,op:.6,vis:true,lock:false};
+      commit(); draw(); renderLayers(); toast('背景画像を読み込みました。ドラッグで位置を合わせられます');};
+    im.onerror=()=>toast('この画像は読み込めませんでした。JPGかPNGを選んでください');
+    im.src=rd.result;};
+  rd.readAsDataURL(f);
+}
+
+function renderStage(){
+  const {list,total}=tally(), p=$('#pane-stage');
+  const keep=document.activeElement&&p.contains(document.activeElement)?document.activeElement.id:null;
+  p.innerHTML=`<div class="grp"><h3>プリセットから始める</h3>
+      <div class="row"><select id="preset" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 8px">
+      ${Object.entries(PRESETS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><button id="loadPreset" class="primary">読み込む</button></div>
+      <p class="hint" style="margin-top:6px">今の配置は置き換わります（「戻す」で元に戻せます）。</p></div>
+    <div class="grp"><h3>ステージの大きさ</h3><div class="pair">
+      <div class="field" style="grid-template-columns:auto 1fr"><label for="sW">間口 m</label><input id="sW" class="num" type="number" min="3" max="40" step="0.5" value="${doc.W/100}"></div>
+      <div class="field" style="grid-template-columns:auto 1fr"><label for="sD">奥行 m</label><input id="sD" class="num" type="number" min="2" max="30" step="0.5" value="${doc.D/100}"></div></div></div>
+    <div class="grp"><h3>表示</h3><div style="display:flex;flex-direction:column;gap:8px">
+      <label class="check"><input type="checkbox" id="sNames" ${doc.showNames?'checked':''}> 奏者名を表示</label>
+      <div class="row"><button id="faceAll">奏者全員を指揮者へ向ける</button></div></div></div>
+    <div class="grp"><h3>編成</h3><p class="total" style="margin:0 0 8px">奏者 <b>${total}</b> 名</p>
+      <div class="counts">${list.map(([l,n])=>`<span>${esc(l)}<b>${n}</b></span>`).join('')||'<span>まだいません</span>'}</div></div>
+    <div class="guide" style="max-width:none">${ABOUT}</div>`;
+  $('#loadPreset').onclick=()=>{const k=$('#preset').value; const d=fromPreset(k); d.showNames=doc.showNames; doc=d; clearSel(); commit(); renderAll(); toast(`「${PRESETS[k].n}」を読み込みました`);};
+  const sz=(id,key)=>{const el=$(id); el.addEventListener('change',()=>{const n=parseFloat(el.value); if(n>0){doc[key]=Math.round(n*100); commit(); draw();}});};
+  sz('#sW','W'); sz('#sD','D');
+  $('#sNames').onchange=e=>{doc.showNames=e.target.checked; commit(); draw();};
+  $('#faceAll').onclick=()=>{const c=cond(); if(!c){toast('指揮台がありません'); return;} doc.items.forEach(i=>{if(i.t==='player') i.r=faceAngle(i.x,i.y,c.x,c.y);}); commit(); draw(); toast('全員を指揮者へ向けました');};
+  if(keep&&$('#'+keep)) $('#'+keep).focus();
+  renderLayers();
+}
+
+function renderSaves(){
+  const saves=LS.get('bamiri.saves')||[], p=$('#pane-save');
+  p.innerHTML=`<div class="grp"><h3>このブラウザに保存</h3>
+      <div class="row"><input id="saveName" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 8px" value="${esc(doc.title||'無題の配置')}" aria-label="保存名"><button id="doSave" class="primary">保存</button></div>
+      <div class="saves" style="margin-top:10px">${saves.length?saves.map(s=>`<div class="save"><div><strong>${esc(s.name)}</strong><small>${new Date(s.t).toLocaleString('ja-JP',{dateStyle:'short',timeStyle:'short'})} ・ ${s.data.items.filter(i=>i.t==='player'||i.t==='standing').length}名</small></div>
+        <button data-open="${s.id}">開く</button><button data-delsave="${s.id}" class="danger">削除</button></div>`).join(''):'<p class="hint">保存した配置はまだありません。</p>'}</div>
+      <p class="hint" style="margin-top:6px">保存先はこの端末のブラウザです。別の端末に移すときは下のデータ書き出しを使ってください。</p></div>
+    <div class="grp"><h3>データの書き出し・読み込み</h3>
+      <div class="row">${STANDALONE?'<button id="saveFile" class="primary">ファイルに保存</button>':''}<button id="openFile">ファイルを開く</button></div>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+      <div class="row" style="margin-top:8px"><button id="copyJson">データをコピー</button><button id="loadJson">貼り付けたデータを読み込む</button></div>
+      <textarea id="jsonBox" style="margin-top:8px" placeholder="コピーしたデータをここに貼り付け"></textarea></div>`;
+  $('#doSave').onclick=()=>{const list=LS.get('bamiri.saves')||[]; list.unshift({id:uid(),name:$('#saveName').value||'無題の配置',t:Date.now(),data:clone(doc),bg:doc.bg?bgSrc:null}); if(!LS.set('bamiri.saves',list.slice(0,40))){toast('容量オーバーで保存できませんでした。古い保存を消すか背景画像を外してください'); return;} renderSaves(); toast('保存しました');};
+  p.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{const s=(LS.get('bamiri.saves')||[]).find(x=>x.id===b.dataset.open); if(!s) return; doc=fixDoc(clone(s.data)); if(s.bg) setBgSrc(s.bg); clearSel(); commit(); renderAll(); toast(`「${s.name}」を開きました`);});
+  p.querySelectorAll('[data-delsave]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.armed){LS.set('bamiri.saves',(LS.get('bamiri.saves')||[]).filter(x=>x.id!==b.dataset.delsave)); renderSaves(); toast('削除しました');}
+    else{b.dataset.armed=1; b.textContent='本当に削除'; setTimeout(()=>{if(b.isConnected){delete b.dataset.armed; b.textContent='削除';}},3000);}});
+  $('#copyJson').onclick=()=>{const t=JSON.stringify(Object.assign({},doc,{bgSrc:doc.bg?bgSrc:null})); const box=$('#jsonBox'); box.value=t;
+    navigator.clipboard.writeText(t).then(()=>toast('データをコピーしました'),()=>{box.select(); toast('テキストを選択しました。コピーしてください');});};
+  const loadData=(txt,ng)=>{try{const d=JSON.parse(txt); if(!Array.isArray(d.items)||!d.W||!d.D) throw 0; if(d.bgSrc) setBgSrc(d.bgSrc); delete d.bgSrc; doc=fixDoc(d); clearSel(); commit(); renderAll(); toast('読み込みました');}
+    catch(e){toast(ng);}};
+  $('#loadJson').onclick=()=>loadData($('#jsonBox').value,'読み込めませんでした。コピーしたデータ全体を貼り付けてください');
+  $('#openFile').onclick=()=>$('#fileIn').click();
+  $('#fileIn').onchange=e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>loadData(r.result,'このファイルは読み込めませんでした。バミリで保存したファイルを選んでください'); r.readAsText(f); e.target.value='';};
+  if($('#saveFile')) $('#saveFile').onclick=()=>{const t=JSON.stringify(Object.assign({},doc,{bgSrc:doc.bg?bgSrc:null}));
+    dl(new Blob([t],{type:'application/json'}),fname('json')); toast('ファイルに保存しました');};
+}
+
+const fname=ext=>{const d=new Date(), z=n=>String(n).padStart(2,'0'); return `bamiri-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.${ext}`;};
+function dl(blob,name){const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000);}
+/* ---------- export ---------- */
+let exMode='dark';
+function exportImg(){
+  $('#nameWarn').hidden=!($('#oNames').checked&&doc.items.some(i=>i.name&&i.name.trim()));
+  const P=exMode==='print'?PAL_PRINT:PAL_SCREEN;
+  const r=stageSvg(P,{names:$('#oNames').checked,counts:$('#oCounts').checked,bg:$('#oBg').checked});
+  const src=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${r.vb}" width="${r.vw}" height="${r.vh}">${r.s}</svg>`;
+  const img=new Image(), scale=Math.min(3,2400/r.vw);
+  img.onload=()=>{const c=document.createElement('canvas'); c.width=Math.round(r.vw*scale); c.height=Math.round(r.vh*scale);
+    const x=c.getContext('2d'); x.drawImage(img,0,0,c.width,c.height);
+    const out=$('#outImg'); out.src=c.toDataURL('image/png'); out._canvas=c;};
+  img.onerror=()=>toast('画像を作れませんでした');
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src);
+}
+$('#exportBtn').onclick=()=>{$('#oBgWrap').hidden=!(doc.bg&&bgSrc); $('#ov').hidden=false; exportImg();};
+$('#ovClose').onclick=()=>{$('#ov').hidden=true;};
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov') $('#ov').hidden=true;});
+$('#mDark').onclick=()=>{exMode='dark'; $('#mDark').setAttribute('aria-pressed','true'); $('#mPrint').setAttribute('aria-pressed','false'); exportImg();};
+$('#mPrint').onclick=()=>{exMode='print'; $('#mPrint').setAttribute('aria-pressed','true'); $('#mDark').setAttribute('aria-pressed','false'); exportImg();};
+$('#oCounts').onchange=exportImg; $('#oNames').onchange=exportImg; $('#oBg').onchange=exportImg;
+if(STANDALONE){$('#dlImg').hidden=false; $('#dlImg').onclick=()=>{const c=$('#outImg')._canvas; if(c) c.toBlob(b=>dl(b,fname('png')));};}
+$('#copyImg').onclick=()=>{const c=$('#outImg')._canvas; if(!c) return;
+  try{c.toBlob(b=>{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>toast('画像をコピーしました'),()=>toast('この環境ではコピーできません。長押し／右クリックで保存してください'));});}
+  catch(e){toast('この環境ではコピーできません。長押し／右クリックで保存してください');}};
+
+/* ---------- misc ---------- */
+let tt=0; function toast(m){const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),1800);}
+$('#title').addEventListener('input',e=>{doc.title=e.target.value;}); $('#title').addEventListener('change',commit);
+$('#undo').onclick=undo; $('#redo').onclick=redo;
+$('#zin').onclick=()=>setZoom(zoom*1.25); $('#zout').onclick=()=>setZoom(zoom/1.25); $('#zfit').onclick=()=>setZoom(1);
+$('#multiBtn').onclick=e=>{multiMode=!multiMode; e.currentTarget.setAttribute('aria-pressed',multiMode); toast(multiMode?'複数選択オン：タップで追加、なぞって範囲選択（画面の移動はオフにすると戻ります）':'複数選択オフ');};
+$('#snapBtn').onclick=e=>{snap=!snap; e.currentTarget.setAttribute('aria-pressed',snap);};
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key.toLowerCase()==='z'){e.preventDefault(); e.shiftKey?redo():undo(); return;}
+  if(mod&&e.key.toLowerCase()==='y'){e.preventDefault(); redo(); return;}
+  if(e.key==='Escape'&&!$('#sheet').hidden){closeSheet(); return;}
+  if(e.key==='Escape'&&aimMode){aimMode=false; svg.style.cursor=''; toast('キャンセルしました'); return;}
+  if(!$('#sheet').hidden) return;
+  if(e.key==='Escape'){ if(!$('#ov').hidden) $('#ov').hidden=true; else if(sels.size) select(null); return;}
+  if(mod&&e.key.toLowerCase()==='a'){e.preventDefault(); act('all'); return;}
+  const it=sel&&get(sel); if(!it) return;
+  if(mod&&e.key.toLowerCase()==='d'){e.preventDefault(); act('dup'); return;}
+  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault(); act('del'); return;}
+  if(e.key==='r'||e.key==='R'){act(e.shiftKey?'rotL':'rotR'); return;}
+  const st=e.shiftKey?50:10, mv={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key];
+  if(mv){e.preventDefault(); selItems().forEach(i=>{i.x+=mv[0]; i.y+=mv[1];}); commit(); draw(); renderSel();}
+});
+
+/* ---------- guide ---------- */
+// ご意見フォームのURL（Googleフォームなど）。空のままならリンクは表示されません。
+const FEEDBACK_URL='https://forms.gle/HpXuHj7YCkBAsbGt9';
+const ABOUT=`<div class="about"><h3>このツールについて</h3><ul>
+  <li>個人が作成し、無料で公開しているツールです。</li>
+  <li>入力した配置や奏者名は、この端末のブラウザの中だけに保存されます。作成者やほかの人に送られることはありません。</li>
+  <li>利用状況を知るため、任意の <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">利用者アンケート</a> をお願いすることがあります。答えるかどうかは自由です。</li>
+  <li>動作や表示の正確さは保証できません。本番の配置は、会場や関係者と必ず確認してください。</li>
+  <li>不具合や「こうしてほしい」は <a class="fbLink" href="${FEEDBACK_URL}" target="_blank" rel="noopener">ご意見フォーム</a> からどうぞ。</li></ul></div>`;
+const GUIDE=[
+  {t:'まずはステージを用意',b:['「ステージ」タブで吹奏楽・オーケストラ・バンドのプリセットを読み込むか、「空のステージ」から始めます。','間口と奥行はm単位で変えられます。目盛りはセンターからの距離です。','「追加」タブで奏者や楽器をタップすると、ステージに置かれます。パート未定の奏者を置いて、あとから「パート」で選ぶこともできます。']},
+  {t:'動かす・そろえる',b:['ドラッグで移動、黄色い丸をドラッグで回転。','Shift／Ctrl＋クリックや、何もないところのドラッグで複数選択。スマホは右上の「複数選択」をオンにしてタップ／なぞります。','「向き」で方向をそろえたり、指揮者や好きな点に向けたりできます。複数選んで「指揮者を中心に弧に並べる」も便利です。']},
+  {t:'レイヤーと背景',b:['「レイヤー」タブで平台・楽器・奏者などを分けて作業できます。鍵マークでロックすると動かなくなります。','ホールの舞台平面図の画像を背景に敷いて、位置と大きさを合わせられます。','ホールの図面は配布元の資料です。ホールの外へ配ったり公開したりするときは扱いに注意してください。']},
+  {t:'保存と共有',b:['配置はこの端末のブラウザに自動保存されます。ほかの人とは共有されません。','ブラウザの履歴やキャッシュを消すと保存も消えます。大事な配置は「保存」タブの「データをコピー」でメモなどに控えておいてください。','「画像にする」で黒ステージか印刷向けの白を選んで画像にできます。','奏者名（生徒の名前など）が入った画像は、SNSや誰でも見られる場所には載せないでください。']}
+];
+let gStep=0;
+function renderGuide(){
+  const g=GUIDE[gStep], last=gStep===GUIDE.length-1;
+  $('#guideBody').innerHTML=`<div class="row" style="align-items:center"><span class="step">${gStep+1} / ${GUIDE.length}</span><span style="flex:1"></span><button id="gSkip">閉じる</button></div>
+    <h2 id="gTitle">${g.t}</h2><ul>${g.b.map(x=>`<li>${x}</li>`).join('')}</ul>
+    ${last?ABOUT:''}
+    <div class="row" style="align-items:center"><div class="dots">${GUIDE.map((_,i)=>`<i class="${i===gStep?'on':''}"></i>`).join('')}</div><span style="flex:1"></span>
+      ${gStep?'<button id="gPrev">戻る</button>':''}<button id="gNext" class="primary">${last?'はじめる':'次へ'}</button></div>`;
+  $('#gSkip').onclick=closeGuide; if($('#gPrev')) $('#gPrev').onclick=()=>{gStep--; renderGuide();};
+  $('#gNext').onclick=()=>{if(last) closeGuide(); else {gStep++; renderGuide();}};
+  $('#gNext').focus();
+}
+function openGuide(){gStep=0; $('#guide').hidden=false; renderGuide();}
+function closeGuide(){$('#guide').hidden=true; try{localStorage.setItem('bamiri.guided','1')}catch(e){}}
+$('#helpBtn').onclick=openGuide;
+$('#guide').addEventListener('click',e=>{if(e.target.id==='guide') closeGuide();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#guide').hidden){closeGuide(); e.stopImmediatePropagation();}},true);
+
+renderAdd(); renderAll(); updHist();
+{let seen=null; try{seen=localStorage.getItem('bamiri.guided')}catch(e){} if(!seen) openGuide();}
+
+/* ---------- 任意アンケートのお願い（回数はこの端末にだけ記録し、どこにも送りません） ---------- */
+const SV=(()=>{const d=LS.get('bamiri.survey')||{}; return Object.assign({visits:0,exports:0,state:'',next:3},d);})();
+SV.visits++; LS.set('bamiri.survey',SV);
+function svSave(){LS.set('bamiri.survey',SV);}
+function svMaybe(){
+  if(SV.state==='done'||SV.state==='never') return;
+  if(!$('#guide').hidden||!$('#ov').hidden) return;
+  if(SV.visits>=SV.next||SV.exports>=2) $('#survey').hidden=false;
+}
+function svDone(){SV.state='done'; svSave(); $('#survey').hidden=true;}
+$('#svGo').onclick=()=>{svDone(); toast('ありがとうございます！');};
+$('#svLink2').onclick=()=>{svDone();};
+$('#svLater').onclick=()=>{SV.next=SV.visits+3; SV.exports=-99; svSave(); $('#survey').hidden=true;};
+$('#svNever').onclick=()=>{SV.state='never'; svSave(); $('#survey').hidden=true;};
+$('#ovClose').addEventListener('click',()=>setTimeout(svMaybe,400));
+$('#exportBtn').addEventListener('click',()=>{SV.exports++; svSave();});
+setTimeout(svMaybe,1500);
+setZoom(matchMedia('(max-width:820px)').matches?1.8:1);
+})();
+</script>
+
+</body>
+</html>
